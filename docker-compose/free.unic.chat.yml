@@ -1,0 +1,22 @@
+version: "3"
+services:
+  unic.chat.free:
+    container_name: unic.chat.appserver.free
+    image: index.docker.io/unicommhub/unicchat_appserver:free-1.0.0
+    restart: on-failure
+    environment:
+      -  MONGO_URL=mongodb://uc_app_free:jdi48shsklHDu3sb@mongodb:27017/unicchat_free?replicaSet=rs0
+      -  MONGO_OPLOG_URL=mongodb://uc_app_free:jdi48shsklHDu3sb@mongodb:27017/local
+      -  ROOT_URL=http://localhost:6050
+      -  PORT=3000
+      -  DEPLOY_METHOD=docker
+      -  PUSH_WEB_API_HOST=http://185.229.9.148:3011
+      -  PUSH_TOKENS_HOST=http://185.229.9.148:3031
+    ports:
+      - 6050:3000
+    networks:
+      - unic-chat-free
+
+networks:
+  unic-chat-free:
+    driver: bridge
