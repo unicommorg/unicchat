@@ -80,33 +80,28 @@ volumes:
     4. `{UNICCHAT_USERNAME}` - пользователь, под которым будет подключаться приложение;
     5. `{UNICCHAT_PASSWORD}` - пароль пользователя приложения;
 
-```micronaut-mongodb-json
-use {
-  DB_NAME
-};
+```
+use {DB_NAME};
 
 db.createUser(
-{user: "{UNICCHAT_USERNAME}", pwd: "{UNICCHAT_PASSWORD}", roles: [
-{role: "readWrite", db: "local"},
-{role: "readWrite", db: "{DB_NAME}"},
-{role: "dbAdmin", db: "{DB_NAME}"},
-{role: "clusterMonitor", db: "admin"}
-]
-}
-);
-
+    {user: "{UNICCHAT_USERNAME}", pwd: "{UNICCHAT_PASSWORD}", roles: [
+    {role: "readWrite", db: "local"},
+    {role: "readWrite", db: "{DB_NAME}"},
+    {role: "dbAdmin", db: "{DB_NAME}"},
+    {role: "clusterMonitor", db: "admin"}]});
 ```
 
 ### Настройка nginx
 
 Пример конфигурации сайта для nginx. Значения в которые необходимо указать:
 
-- {PORT} - порт на котором будет запущен UnicChat на сервере приложения;
+- {PORT} - порт на котором будет запущен UnicChat на сервере приложения, в нашем примере 5050;
 - {DOMAIN} - ваш домен
 
 ```
 upstream free {
-server 127.0.0.1:{PORT};
+# server 127.0.0.1:{PORT};
+server 127.0.0.1:5050;
 }
 
 server {
@@ -168,11 +163,12 @@ services:
     environment:
       -  MONGO_URL=mongodb://{UNICCHAT_USERNAME}:{UNICCHAT_PASSWORD}@mongodb:27017/{DB_NAME}?replicaSet=rs0
       -  MONGO_OPLOG_URL=mongodb://{UNICCHAT_USERNAME}:{UNICCHAT_PASSWORD}@mongodb:27017/local
-      -  ROOT_URL=http://localhost:{PORT}
-      -  PORT={PORT}
+      -  ROOT_URL=http://localhost:8080
+      -  PORT=8080
       -  DEPLOY_METHOD=docker
     ports:
-      - {PORT}:{PORT}
+      - 5050:8080
+#       - {PORT:8080
     networks:
       - unic-chat-free
 
@@ -182,7 +178,7 @@ networks:
 ```
 
 2. Запустить контейнер, например, командой `docker-compose -f {YML_FILE} up -d`
-3. После запуска приложения, открыть веб-интерфейс приложения по адресу `http://localhost:{PORT}` и создать первого
+3. После запуска приложения, открыть веб-интерфейс приложения по адресу `http://localhost:5050` и создать первого
    пользователя-администратора, заполнив параметры
 
 * `Name` - Имя пользователя, которое будет отображаться в чате;
@@ -199,7 +195,7 @@ networks:
 4. После создания пользователя, авторизоваться в веб-интерфейсе с использованием ранее указанных параметров.
 5. Для включения пушей, перейти в раздел Администрирование - Push. Включить использование шлюза и указать адрес
    шлюза https://push1.unic.chat
-6. Перейти в раздел Администрирование - Organization, убедиться что поля заполнены в соответсвии с п.2
+6. Перейти в раздел Администрирование - Organization, убедиться что поля заполнены в соответствии с п.2
 7. Настройка завершена.
 
 ### Клиентские приложения
