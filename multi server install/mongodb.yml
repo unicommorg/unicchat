@@ -1,0 +1,31 @@
+version: "3"
+services:
+  mongodb:
+    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}
+    container_name: unic.chat.db.mongo.4.4
+    restart: on-failure
+    volumes:
+      - mongodb_data:/bitnami/mongodb1
+    environment:
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME:-rs0}
+      MONGODB_REPLICA_SET_KEY: ${MONGODB_REPLICA_SET_KEY:-rs0key}
+      MONGODB_PORT_NUMBER: ${MONGODB_PORT_NUMBER:-27017}
+# поменять IP адрес своего сервера в MONGODB_INITIAL_PRIMARY_HOST и MONGODB_ADVERTISED_HOSTNAME
+      MONGODB_INITIAL_PRIMARY_HOST: ${MONGODB_INITIAL_PRIMARY_HOST:-192.168.10.1}
+      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: ${MONGODB_INITIAL_PRIMARY_PORT_NUMBER:-27017}
+      MONGODB_ADVERTISED_HOSTNAME: ${MONGODB_ADVERTISED_HOSTNAME:-192.168.10.1}
+      MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL:-true}
+# указать свой пароль
+      MONGODB_ROOT_PASSWORD: "setyourrootpassword"
+    ports:
+      - "27017:27017"
+    networks:
+      - unic-chat
+
+networks:
+  unic-chat:
+    driver: bridge
+
+volumes:
+  mongodb_data: { driver: local }

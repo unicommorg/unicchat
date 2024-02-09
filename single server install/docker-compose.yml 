@@ -1,0 +1,44 @@
+version: "3"
+services:
+  unic.chat.free:
+    container_name: unic.chat.free.appserver
+    image: index.docker.io/unicommhub/unicchat_free:1.0.0
+    restart: on-failure
+    environment:
+      - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/DB_UC1?replicaSet=rs0
+      - MONGO_OPLOG_URL=mongodb://ucusername:ucpassword@mongodb:27017/local
+      - ROOT_URL=http://localhost:5050
+      - PORT=8080
+      - DEPLOY_METHOD=docker
+    ports:
+      - "5050:8080"
+    networks:
+      - unic-chat-free
+
+  mongodb:
+    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}
+    container_name: unic.chat.free.db.mongo
+    restart: on-failure
+    volumes:
+      - mongodb_data:/bitnami/mongodb
+    environment:
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME:-rs0}
+      MONGODB_REPLICA_SET_KEY: ${MONGODB_REPLICA_SET_KEY:-rs0key}
+      MONGODB_PORT_NUMBER: ${MONGODB_PORT_NUMBER:-27017}
+      MONGODB_INITIAL_PRIMARY_HOST: ${MONGODB_INITIAL_PRIMARY_HOST:-mongodb}
+      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: ${MONGODB_INITIAL_PRIMARY_PORT_NUMBER:-27017}
+      MONGODB_ADVERTISED_HOSTNAME: ${MONGODB_ADVERTISED_HOSTNAME:-mongodb}
+      MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL:-true}
+# указать свой пароль
+      MONGODB_ROOT_PASSWORD: "setyourrootpassword"
+    networks:
+      - unic-chat-free
+
+networks:
+  unic-chat-free:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
