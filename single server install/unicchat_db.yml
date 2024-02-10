@@ -7,11 +7,11 @@ services:
     environment:
       - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/DB_UC1?replicaSet=rs0
       - MONGO_OPLOG_URL=mongodb://ucusername:ucpassword@mongodb:27017/local
-      - ROOT_URL=http://localhost:5050
+      - ROOT_URL=http://localhost:8080
       - PORT=8080
       - DEPLOY_METHOD=docker
     ports:
-      - "5050:8080"
+      - "8080:8080"
     networks:
       - unic-chat-free
 
