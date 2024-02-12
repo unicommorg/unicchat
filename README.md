@@ -154,6 +154,8 @@ services:
       MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL:-true}
       # указать свой пароль 
       MONGODB_ROOT_PASSWORD: "setrootpassword"
+    ports:
+      - "27017:27017"
     networks:
       - unic-chat-free
 
