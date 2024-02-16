@@ -374,4 +374,6 @@ server_name domain www.domain;
 Раздел в разработке.
 
 ### Клиентские приложения
-* [Репозиторий клиентских приложений](https://github.com/unicommorg/unic.chat.client.releases/releases)
+* [Репозитории клиентских приложений]
+* Android APK (для iOS только Testflight доступ): (https://github.com/unicommorg/unic.chat.client.releases)
+* Desktop:  (https://github.com/unicommorg/unic.chat.desktop.releases/releases)
