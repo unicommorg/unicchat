@@ -375,5 +375,6 @@ server_name domain www.domain;
 
 ### Клиентские приложения
 * [Репозитории клиентских приложений]
-* Android APK (для iOS только Testflight доступ): (https://github.com/unicommorg/unic.chat.client.releases)
+* Android: (https://play.google.com/store/apps/details?id=pro.unicomm.unic.chat&pcampaignid=web_share)
+* iOS: (https://apps.apple.com/ru/app/unicchat/id1665533885)
 * Desktop:  (https://github.com/unicommorg/unic.chat.desktop.releases/releases)
