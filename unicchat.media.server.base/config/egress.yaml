@@ -1,0 +1,17 @@
+redis:
+  address: localhost:6379
+  username: ""
+  password: ""
+  db: 0
+  use_tls: false
+  sentinel_master_name: ""
+  sentinel_username: ""
+  sentinel_password: ""
+  sentinel_addresses: []
+  cluster_addresses: []
+  max_redirects: null
+log_level: info
+api_key: gs528shsa3gGFFD
+api_secret: twz72hasla93nhdHSGFy38skx82hS
+ws_url: wss://media.unic.chat
+insecure: true

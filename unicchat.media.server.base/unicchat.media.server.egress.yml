@@ -1,0 +1,13 @@
+# unicomm medua server egress
+# support@unicomm.pro
+services:
+  uc.media.egress:
+    image: unicommhub/unic.chat.media.server.egress:1.1.0
+    container_name: uc.media.egress
+    restart: unless-stopped
+    environment:
+      - EGRESS_CONFIG_FILE=/etc/egress.yaml
+    volumes:
+      - ./config/egress.yaml:/etc/egress.yaml
+    cap_add:
+      - CAP_SYS_ADMIN

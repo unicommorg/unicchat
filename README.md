@@ -359,7 +359,7 @@ server_name domain www.domain;
 Нажмите "ДА"
 
 ### Шаг 10. Настройка push-уведомлений 
-Раздел в разработке.
+Приложение Unicchat работает с внешним push сервером для доставки push-уведомлений в приложение Unicchat на мобильные устройства.
 ### Шаг 11. Настройка подключения к SMTP серверу для отправки уведомдений в почту
 Раздел в разработке.
 ### Шаг 12. Настройка подключения к LDAP серверу
@@ -370,6 +370,99 @@ server_name domain www.domain;
 Раздел в разработке.
 ### Настройка отказоустойчивого решения
 Раздел в разработке.
+### Установка локального медиа сервера для ВКС
+Для работы ВКС приложение Unicchat использует медиа сервер установленный в облаке компании Unicomm. Пользователи самостоятельно, для обеспечения большей безопасности или индивидуальной конфигурации для высоконагруженых ВКС, могут установить и сконфигурировать медиа-сервер внутри своей организации. 
+Установка и настройка медиа-сервера включает шаги:
+- Регистрация домена для медиа-сервера;
+- Запуск `redis`;
+- Запуск медиа-сервера;
+- Запуск компоненты медиа-сервера для управления потоком вещания;
+- Настройка приложения Unicchat для работы с медиа-сервером;
+
+#### Регистрация домена для медиа-сервера
+Для корректной работы ВКС с приложением на мобильных устройствах необходимо обеспечить доступность сервера на котором будет установлен медиа сервера в Интернет и зарегистрировать домены для сервера:
+- media.domain.org;
+- tune.media.domain.org;
+- сертификаты HTTPS для этих доменов;
+
+#### Запуск redis для хранения кешей
+Медиа сервер Unicchat использует `redis` для хранения информации в формате key-value. Вы можете воспользоваться собственной версией `redis` или развернуть самостоятельно необходимую конфигурацию и версию.
+Для быстрого старта воспользуйтесь предложенной конфигурацией `../unicchat.media.server.base/redis.yml`
+Запустите экземпляр `redis` на сервере с медиа-сервером Unicchat 
+`docker-compose -f ../unicchat.media.server.base/redis.yml up -d`, при необходимости 
+
+#### Запуск медиа-сервера
+Заполните параметры ниже в файле `../unicchat.media.server.base/config/server.yaml`
+* `{domain}` - название вашего домена;
+* `{keys}` - укажите вашу пару ключ-секрет в формате `key:secret` или воспользуйтесь предложенной;
+
+```yaml
+log_level: info
+port: 7880
+bind_addresses:
+  - ""
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: true
+  enable_loopback_candidate: false
+redis:
+  address: localhost:6379
+  username: ""
+  password: ""
+  db: 0
+  use_tls: false
+  sentinel_master_name: ""
+  sentinel_username: ""
+  sentinel_password: ""
+  sentinel_addresses: []
+  cluster_addresses: []
+  max_redirects: null
+turn:
+  enabled: true
+  domain: turn.media.domain.org
+  tls_port: 5349
+  udp_port: 3478
+  external_tls: true
+keys:
+  gs528shsa3gGFFD: twz72hasla93nhdHSGFy38skx82hS
+```
+Запустить контейнер медиа-сервера, например, командой `docker-compose -f ./unicchat.media.server.base/unicchat.media.server.yml up -d`
+
+#### Запуск egress для медиа-сервера
+Заполните параметры ниже в файле `../unicchat.media.server.base/config/egress.yaml`
+* `{ws_url}` - укажите название вашего домена;
+* `{api_key}` - укажите ваш ключ или воспользуйтесь предложенным. Указанное значение должно совпадать со значением `key` указанным в файле `../unicchat.media.server.base/config/server.yaml`;
+* `{api_secret}` - укажите ваш секрет или воспользуйтесь предложенным. Указанное значение должно совпадать со значением `secret` указанным в файле `../unicchat.media.server.base/config/server.yaml`;
+
+```yaml
+redis:
+  address: localhost:6379
+  username: ""
+  password: ""
+  db: 0
+  use_tls: false
+  sentinel_master_name: ""
+  sentinel_username: ""
+  sentinel_password: ""
+  sentinel_addresses: []
+  cluster_addresses: []
+  max_redirects: null
+log_level: info
+api_key: gs528shsa3gGFFD
+api_secret: twz72hasla93nhdHSGFy38skx82hS
+ws_url: wss://media.domain.org
+insecure: true
+```
+Запустить контейнер медиа-сервера, например, командой `docker-compose -f ./unicchat.media.server.base/unicchat.media.server.egress.yml up -d`
+
+#### Настройка приложения Unicchat для работы с медиа-сервером
+В интерфейсе приложения Unicchat, в разделе **Администрирование** - **Настройки** - **Видеоконференция** заполнить параметры для подключения к медиа серверу:
+* **URL для подключения** - адрес для подключения к медиа серверу, параметр `{ws_url}` из файла `../unicchat.media.server.base/config/egress.yaml`. В примере - `wss://media.domain.org`.
+* **API key** - ключ для подключения к медиа серверу, параметр `{api_key}` из файла `../unicchat.media.server.base/config/egress.yaml`. В примере - `gs528shsa3gGFFD`.
+* **API secret** - секрет для подключения к медиа серверу, параметр `{api_secret}` из файла `../unicchat.media.server.base/config/egress.yaml`. В примере - `twz72hasla93nhdHSGFy38skx82hS`.
+
 ### Частые проблемы при установке
 Раздел в разработке.
 
