@@ -471,7 +471,7 @@ insecure: true
 В интерфейсе приложения Unicchat, в разделе **Администрирование** - **Настройки** - **Видеоконференция** заполнить параметры для подключения к медиа серверу:
 * **URL для подключения** - адрес для подключения к медиа серверу, параметр `{ws_url}` из файла `../unicchat.media.server.base/config/egress.yaml`. В примере - `wss://media.domain.org`.
 * **API key** - ключ для подключения к медиа серверу, параметр `{api_key}` из файла `../unicchat.media.server.base/config/egress.yaml`. В примере - `gs528shsa3gGFFD`.
-* **API secret** - секрет для подключения к медиа серверу, параметр `{api_secret}` из файла `../unicchat.media.server.base/config/egress.yaml`. В примере - `twz72hasla93nhdHSGFy38skx82hS`.
+* **API secret** - секрет для подключения к медиа серверу, параметр `{api_secret}` из файла `../unicchat.media.server.base/config/egress.yaml`. В примере - `twz72hasla93nhdHSGFy38skx82hSgs53g`.
 
 ### Частые проблемы при установке
 Раздел в разработке.
