@@ -399,7 +399,7 @@ server_name domain www.domain;
 Медиа сервер Unicchat использует `redis` для хранения информации в формате key-value. Вы можете воспользоваться собственной версией `redis` или развернуть самостоятельно необходимую конфигурацию и версию.
 Для быстрого старта воспользуйтесь предложенной конфигурацией `../unicchat.media.server.base/redis.yml`
 Запустите экземпляр `redis` на сервере с медиа-сервером Unicchat 
-`docker-compose -f ../unicchat.media.server.base/redis.yml up -d`, при необходимости 
+`docker-compose -f ./unicchat.media.server.base/redis.yml up -d`, при необходимости 
 
 #### Запуск медиа-сервера
 Заполните параметры ниже в файле `../unicchat.media.server.base/config/server.yaml`
