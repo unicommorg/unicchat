@@ -138,7 +138,7 @@ RAM 8 Gb;
 version: "3"
 services:
   mongodb:
-    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}
+    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-5.0}
     container_name: unic.chat.free.db.mongo
     restart: on-failure
     volumes:
