@@ -403,13 +403,13 @@ server_name domain www.domain;
 - Запуск media server egress;
 
 #####  Запуск redis 
-1. Загрузите файл `unicchat.media.server.base/redis.yml` и разместите на сервере, где будет установлен медиа-сервер. 
+1. Загрузите файл `unicchat.media.server.free/redis.yml` и разместите на сервере, где будет установлен медиа-сервер. 
 2. Запустите контейнер `redis` командой `docker-compose -f redis.yml up -d`.
 3. Для работы `redis` должен быть разрешен порт 6379/tcp.
 
 #####  Запуск caddy
-1. Загрузите файл `unicchat.media.server.base/caddy.yml` и разместите на сервере, где будет установлен медиа-сервер.
-2. В этом каталоге, создайте папку `config` и сохраните туда файл конфигурации `unicchat.media.server.base/config/caddy.yaml`.
+1. Загрузите файл `unicchat.media.server.free/caddy.yml` и разместите на сервере, где будет установлен медиа-сервер.
+2. В этом каталоге, создайте папку `config` и сохраните туда файл конфигурации `unicchat.media.server.free/config/caddy.yaml`.
 3. Отредактируйте файл `./config/caddy.yaml` указав ваши названия доменов в файле. У вас должно быть зарегистрировано 3 домена для работы медиа-сервера
 * **media-server.your_domain** - основной домен,
 * **turn.media-server.your_domain** и **whip.media-server.your_domain** - дополнительные домены.
@@ -476,8 +476,8 @@ apps:
 6. Важно, сервис самостоятельно получит сертификаты с LetsEncrypt. Запускайте когда вы делегировали основной и вспомогательные домены и открыли 443/tcp порт на firewall.
 
 #####  Запуск медиа-сервера
-1. Загрузите файл `unicchat.media.server.base/unicchat.media.server.yml` и разместите на сервере, где будет установлен медиа-сервер.
-2. В этом каталоге, создайте папку `config` и сохраните туда файл конфигурации `unicchat.media.server.base/config/server.yaml`.
+1. Загрузите файл `unicchat.media.server.free/unicchat.media.server.yml` и разместите на сервере, где будет установлен медиа-сервер.
+2. В этом каталоге, создайте папку `config` и сохраните туда файл конфигурации `unicchat.media.server.free/config/server.yaml`.
 3. Отредактируйте файл `./config/server.yaml`, для этого заполните параметры в файле:
 * `{domain}` - название вашего домена;
 * `{keys}` - укажите вашу пару ключ-секрет в формате `key:secret` или воспользуйтесь предложенной. Длина строки `secret` должна быть не менее 32 символов;
@@ -517,12 +517,12 @@ keys:
 Запустите контейнер медиа-сервера командой `docker-compose -f unicchat.media.server.yml up -d`
 
 #### Запуск egress для медиа-сервера
-1. Загрузите файл `unicchat.media.server.base/unicchat.media.server.egress.yml` и разместите на сервере, где будет установлен медиа-сервер.
-2. В этом каталоге, создайте папку `config` и сохраните туда файл конфигурации `unicchat.media.server.base/config/egress.yaml`.
+1. Загрузите файл `unicchat.media.server.free/unicchat.media.server.egress.yml` и разместите на сервере, где будет установлен медиа-сервер.
+2. В этом каталоге, создайте папку `config` и сохраните туда файл конфигурации `unicchat.media.server.free/config/egress.yaml`.
 3. Отредактируйте файл `./config/egress.yaml`, для этого заполните параметры:
 * `{ws_url}` - укажите название вашего домена;
-* `{api_key}` - укажите ваш ключ или воспользуйтесь предложенным. Указанное значение должно совпадать со значением `key` указанным в файле `unicchat.media.server.base/config/server.yaml`;
-* `{api_secret}` - укажите ваш секрет или воспользуйтесь предложенным. Указанное значение должно совпадать со значением `secret` указанным в файле `unicchat.media.server.base/config/server.yaml`;
+* `{api_key}` - укажите ваш ключ или воспользуйтесь предложенным. Указанное значение должно совпадать со значением `key` указанным в файле `unicchat.media.server.free/config/server.yaml`;
+* `{api_secret}` - укажите ваш секрет или воспользуйтесь предложенным. Указанное значение должно совпадать со значением `secret` указанным в файле `unicchat.media.server.free/config/server.yaml`;
 
 ```yaml
 redis:
@@ -547,9 +547,9 @@ insecure: true
 
 #### Настройка приложения Unicchat для работы с медиа-сервером
 В интерфейсе приложения Unicchat, в разделе **Администрирование** - **Настройки** - **Видеоконференция** заполнить параметры для подключения к медиа серверу:
-* **URL для подключения** - адрес для подключения к медиа серверу, параметр `{ws_url}` из файла `unicchat.media.server.base/config/egress.yaml`. В примере - `wss://media-server.your_domain`.
-* **API key** - ключ для подключения к медиа серверу, параметр `{api_key}` из файла `unicchat.media.server.base/config/egress.yaml`. В примере - `gs528shsa3gGFFD`.
-* **API secret** - секрет для подключения к медиа серверу, параметр `{api_secret}` из файла `unicchat.media.server.base/config/egress.yaml`. В примере - `jshGshsil2439dxznHGSOPWIjnxb27e02nzak238iHSHw32i9o`.
+* **URL для подключения** - адрес для подключения к медиа серверу, параметр `{ws_url}` из файла `unicchat.media.server.free/config/egress.yaml`. В примере - `wss://media-server.your_domain`.
+* **API key** - ключ для подключения к медиа серверу, параметр `{api_key}` из файла `unicchat.media.server.free/config/egress.yaml`. В примере - `gs528shsa3gGFFD`.
+* **API secret** - секрет для подключения к медиа серверу, параметр `{api_secret}` из файла `unicchat.media.server.free/config/egress.yaml`. В примере - `jshGshsil2439dxznHGSOPWIjnxb27e02nzak238iHSHw32i9o`.
 
 ### Частые проблемы при установке
 Раздел в разработке.
