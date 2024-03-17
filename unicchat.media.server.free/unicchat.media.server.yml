@@ -2,7 +2,7 @@
 # support@unicomm.pro
 services:
   uc.media.server:
-    image: unicommhub/unic.chat.media.server:1.1.0
+    image: unicommhub/unic.chat.media.server:1.1.1
     container_name: uc.media.server
     restart: unless-stopped
     command: --config /opt/media-server/server.yaml
