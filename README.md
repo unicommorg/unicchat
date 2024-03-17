@@ -250,7 +250,7 @@ services:
       - PORT=8080
       - DEPLOY_METHOD=docker
     ports:
-# указать свой порт на котором будет доступен сервер UnicChat
+# указать свой порт, на котором будет доступен сервер UnicChat
       - "port:8080"
     networks:
       - unic-chat-free
