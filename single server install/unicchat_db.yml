@@ -2,7 +2,7 @@ version: "3"
 services:
   unic.chat.free:
     container_name: unic.chat.free.appserver
-    image: index.docker.io/unicommhub/unicchat_free:1.0.0
+    image: index.docker.io/unicommhub/unicchat_free:1.4.1
     restart: on-failure
     environment:
       - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/DB_UC1?replicaSet=rs0
@@ -16,7 +16,7 @@ services:
       - unic-chat-free
 
   mongodb:
-    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}
+    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-5.0}
     container_name: unic.chat.free.db.mongo
     restart: on-failure
     volumes:

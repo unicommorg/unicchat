@@ -1,10 +1,12 @@
 # unicomm medua server egress
 # support@unicomm.pro
+version: "3"
 services:
   uc.media.egress:
     image: unicommhub/unic.chat.media.server.egress:1.1.0
     container_name: uc.media.egress
     restart: unless-stopped
+    network_mode: "host"
     environment:
       - EGRESS_CONFIG_FILE=/etc/egress.yaml
     volumes:

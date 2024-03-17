@@ -1,15 +1,12 @@
 # unicomm medua server
 # support@unicomm.pro
+version: "3"
 services:
   uc.media.server:
-    image: unicommhub/unic.chat.media.server:1.1.1
+    image: unicommhub/unic.chat.media.server:1.1.2
     container_name: uc.media.server
     restart: unless-stopped
+    network_mode: "host"
     command: --config /opt/media-server/server.yaml
-    ports:
-      - 443:443
-      - 7880:7880
-      - 7881:7881
-      - 50000-51000:50000-51000/udp
     volumes:
       - ./config/server.yaml:/opt/media-server/server.yaml

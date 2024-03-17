@@ -12,6 +12,6 @@ redis:
   max_redirects: null
 log_level: info
 api_key: gs528shsa3gGFFD
-api_secret: twz72hasla93nhdHSGFy38skx82hSgs53g
-ws_url: wss://media.unic.chat
+api_secret: jshGshsil2439dxznHGSOPWIjnxb27e02nzak238iHSHw32i9o
+ws_url: wss://media-server.your_domain
 insecure: true

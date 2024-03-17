@@ -1,0 +1,11 @@
+version: "3"
+services:
+  caddy:
+    image: livekit/caddyl4
+    container_name: caddy
+    command: run --config /etc/caddy.yaml --adapter yaml
+    restart: unless-stopped
+    network_mode: "host"
+    volumes:
+      - ./config/caddy.yaml:/etc/caddy.yaml
+      - ./caddy_data:/data
