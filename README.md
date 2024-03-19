@@ -394,7 +394,7 @@ server_name domain www.domain;
 #### Регистрация домена для медиа-сервера
 Для корректной работы ВКС с приложением на мобильных устройствах необходимо обеспечить доступность сервера на котором будет установлен медиа сервера в Интернет и зарегистрировать домены для сервера:
 - media-server.your_domain;
-- tune.media-server.your_domain;
+- turn.media-server.your_domain;
 - whip.media-server.your_domain
 
 #### Запуск медиа-сервера
