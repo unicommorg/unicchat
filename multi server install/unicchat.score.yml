@@ -1,0 +1,14 @@
+# unicomm medua server egress
+# support@unicomm.pro
+version: "3"
+services:
+  uc.media.score:
+    image: unicommhub/unicchat_free:sc-1.4.1
+    container_name: uc.score
+    restart: unless-stopped
+    network_mode: "host"
+    environment:
+      - UniComm.Config=/app/sc.config.json
+    volumes:
+      - ./config/sc.config.json:/app/sc.config.json
+

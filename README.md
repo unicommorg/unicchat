@@ -230,12 +230,13 @@ roles: [
 
 ### Шаг 5. Запуск сервера UnicChat
 
-1. Заполните параметры ниже в yml файле и сохраните его как `unicchat.yml`
+1. Заполните параметры ниже в yml файле и сохраните его как `unicchat.yml` 
     * `{port}` - порт, на котором будет запущен сервер UnicChat (должен быть тот же что был указан для nginx);
     * `{db_name}` - название базы данных;
     * `{ucusername}` - пользователь, под которым будет подключаться сервер UnicChat к БД;
     * `{ucpassword}` - пароль пользователя;
     * `{mongodb}` - укажите адрес вашего сервера БД. Если вы запускаете сервер UnicChat и БД на одном сервере, оставьте текущее значение без изменений.
+    * `{ucserver}` - укажите имя или IP адрес вашего сервера UnicChat, например, публичный адрес вашего сервера для пользователей
 
 ```yml
 version: "3"
@@ -250,9 +251,24 @@ services:
       - ROOT_URL=http://localhost:8080
       - PORT=8080
       - DEPLOY_METHOD=docker
+      - UNIC_SOLID_HOST=http://ucserver:8881
     ports:
 # указать свой порт, на котором будет доступен сервер UnicChat
       - "port:8080"
+    networks:
+      - unic-chat-free
+
+  uc.media.score:
+    image: unicommhub/unicchat_free:sc-1.4.1
+    container_name: uc.score
+    restart: unless-stopped
+    environment:
+      - UniComm.Config=/app/sc.config.json
+    ports:
+      - "8881:80"
+      - "4443:443"
+    volumes:
+      - ./config/sc.config.json:/app/sc.config.json
     networks:
       - unic-chat-free
 
@@ -261,11 +277,20 @@ networks:
     external: true
 
 ```
-
-2. Запустить контейнер, например, командой `docker-compose -f unicchat.yml up -d`
-3. После запуска приложения, вы можете открыть веб-интерфейс приложения по адресу `http://unicchat_server_ip:port`, где `unicchat_server_ip` - имя или IP адрес сервера, 
+2. Скачайте в каталог с файлом `unicchat.yml`, каталог `/config/sc.config.json` из раздела `single server install`
+3. В файле `sc.config.json` отредактируйте параметры:
+```json
+    // адрес сервера UnicChat с портом 8881. Порт не менять
+    "UniLicenseUrl": "http://unic.chat.server:8881/"
+    // адрес mongodb базы UnicChat
+    "ConnectionString": "mongodb://ucusername:ucpassword@mongodb:27017/db_name?replicaSet=rs0",
+    // адрес redis
+    "ConnectionString": "10.0.1.1:6379, password=YOUR_PASSWORD, allowAdmin=true",
+```
+4. Запустить контейнер, например, командой `docker-compose -f unicchat.yml up -d`
+5. После запуска приложения, вы можете открыть веб-интерфейс приложения по адресу `http://unicchat_server_ip:port`, где `unicchat_server_ip` - имя или IP адрес сервера, 
 где был запущен UnicChat, `port` - значение параметра, которые вы указали выше.
-4. Теперь можно приступить к настройке сервера и создания первого пользователя (перейдите на [Шаг 9. Создание пользователя администратора](#шаг-9-создание-пользователя-администратора)) или  
+6. Теперь можно приступить к настройке сервера и создания первого пользователя (перейдите на [Шаг 9. Создание пользователя администратора](#шаг-9-создание-пользователя-администратора)) или  
    настройте прокси сервер и получите сертификат HTTPS, для этого перейдите на [Шаг 7. Настройка nginx как Proxy](#шаг-7-настройка-nginx-как-proxy)
 
 ### Шаг 6. Настройка nginx как Proxy
@@ -384,7 +409,7 @@ server_name domain www.domain;
 Раздел в разработке.
 ### ВКС
 Для работы ВКС приложение Unicchat использует медиа сервер установленный в облаке компании Unicomm.
-Для продовых решений доступно локальное развёртывание ВКС
+По запросу клиентов доступно платное развёртывание ВКС on-premise.
 
 ### Частые проблемы при установке
 Раздел в разработке.

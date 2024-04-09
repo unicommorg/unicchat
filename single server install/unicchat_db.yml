@@ -10,6 +10,7 @@ services:
       - ROOT_URL=http://localhost:8080
       - PORT=8080
       - DEPLOY_METHOD=docker
+      - UNIC_SOLID_HOST=http://unic.chat.server:8881
     ports:
       - "8080:8080"
     networks:
@@ -32,6 +33,20 @@ services:
       MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL:-true}
 # указать свой пароль
       MONGODB_ROOT_PASSWORD: "setyourrootpassword"
+    networks:
+      - unic-chat-free
+
+  uc.media.score:
+    image: unicommhub/unicchat_free:sc-1.4.1
+    container_name: uc.score
+    restart: unless-stopped
+    environment:
+      - UniComm.Config=/app/sc.config.json
+    ports:
+      - "8881:80"
+      - "4443:443"
+    volumes:
+      - ./config/sc.config.json:/app/sc.config.json
     networks:
       - unic-chat-free
 
