@@ -280,8 +280,6 @@ networks:
 2. Скачайте в каталог с файлом `unicchat.yml`, каталог `/config/sc.config.json` из раздела `single server install`
 3. В файле `sc.config.json` отредактируйте параметры:
 ```json
-    // адрес сервера UnicChat с портом 8881. Порт не менять
-    "UniLicenseUrl": "http://unic.chat.server:8881/"
     // адрес mongodb базы UnicChat
     "ConnectionString": "mongodb://ucusername:ucpassword@mongodb:27017/db_name?replicaSet=rs0",
     // адрес redis
