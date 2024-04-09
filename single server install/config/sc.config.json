@@ -1,6 +1,5 @@
 {
   "UniVaultToken": "{%VaultRandomToken%}",
-  "UniLicenseUrl": "http://unic.chat.server:8881/",
 
   "InitConfig": {
     "DropAfter": false,
