@@ -1,6 +1,6 @@
 ## Инструкция по установке корпоративного мессенджера для общения и командной работы UnicChat
 
-###### версия free-1.4.1, версия документа 1.5
+###### версия free-1.4.2, версия документа 1.5
 ### Оглавление 
 <!-- TOC -->
   * [Инструкция по установке корпоративного мессенджера для общения и командной работы UnicChat](#инструкция-по-установке-корпоративного-мессенджера-для-общения-и-командной-работы-unicchat)
@@ -243,7 +243,7 @@ version: "3"
 services:
   unic.chat.free:
     container_name: unic.chat.appserver.free
-    image: index.docker.io/unicommhub/unicchat_free:1.4.1
+    image: index.docker.io/unicommhub/unicchat_free:1.4.2
     restart: on-failure
     environment:
       - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/db_name?replicaSet=rs0
