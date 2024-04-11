@@ -282,6 +282,7 @@ networks:
 ```json
     // адрес mongodb базы UnicChat
     "ConnectionString": "mongodb://ucusername:ucpassword@mongodb:27017/db_name?replicaSet=rs0",
+    "DataBase": "db_name"
     // адрес redis
     "ConnectionString": "10.0.1.1:6379, password=YOUR_PASSWORD, allowAdmin=true",
 ```
