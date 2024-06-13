@@ -3,12 +3,7 @@
 
   "InitConfig": {
     "DropAfter": false,
-    "Names": "Redis Mongo",
-    "Redis": {
-      "Type": "DbConStringEntry",
-      "ConnectionString": "10.0.13.61:6379, password=YOUR_PASSWORD, allowAdmin=true",
-      "DataBase": ""
-    },
+    "Names": "Mongo",
     "Mongo": {
       "Type": "DbConStringEntry",
       "ConnectionString": "mongodb://ucusername:ucpassword@mongodb:27017/db_name?replicaSet=rs0",
@@ -19,11 +14,7 @@
   "Plugins": {
     "Attach": "*",
     "DeleteUnused": true,
-    "NameFilter": "org.unicomm.plugin.",
-
-    "AttachBlock": {
-      "UnicChat": "Logger UniVault Mongo Redis Tasker KnowledgeBase UniAct",
-    },
+    "NameFilter": "org.unicomm.plugin."
   },
 
   "Swagger": {
@@ -34,6 +25,7 @@
     "ShowSchemas": true,
     "ShowTagNames": true,
     "ShowLicense": true,
+    "HideUI": false,
     "License": {
       "Name": "Unicomm.pro - License",
       "Url": "https://unicomm.pro/license"
