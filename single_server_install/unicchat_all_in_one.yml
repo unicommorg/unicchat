@@ -1,24 +1,26 @@
 version: "3"
 services:
-  unic.chat.free:
-    container_name: unic.chat.free.appserver
-    image: index.docker.io/unicommhub/unicchat_free:1.4.2
+  unic.chat:
+    container_name: unic.chat.appserver
+    image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-1.4.3
     restart: on-failure
     environment:
-      - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/DB_UC1?replicaSet=rs0
+      - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0
       - MONGO_OPLOG_URL=mongodb://ucusername:ucpassword@mongodb:27017/local
       - ROOT_URL=http://localhost:8080
       - PORT=8080
       - DEPLOY_METHOD=docker
-      - UNIC_SOLID_HOST=http://unic.chat.server:8881
+      - UNIC_SOLID_HOST=http://uc.score:8881
     ports:
       - "8080:8080"
     networks:
-      - unic-chat-free
+      - unic-chat
+    depends_on:
+      - mongodb
 
   mongodb:
     image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-5.0}
-    container_name: unic.chat.free.db.mongo
+    container_name: unic.chat.db.mongo
     restart: on-failure
     volumes:
       - mongodb_data:/bitnami/mongodb
@@ -32,26 +34,33 @@ services:
       MONGODB_ADVERTISED_HOSTNAME: ${MONGODB_ADVERTISED_HOSTNAME:-mongodb}
       MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL:-true}
 # указать свой пароль
-      MONGODB_ROOT_PASSWORD: "setyourrootpassword"
+      MONGODB_ROOT_PASSWORD: "rootpassword"
+      MONGODB_USERNAME: "ucusername"
+      MONGODB_PASSWORD: "ucpassword"
+      MONGODB_DATABASE: "dbuc1"
     networks:
-      - unic-chat-free
+      - unic-chat
 
-  uc.media.score:
-    image: unicommhub/unicchat_free:sc-1.4.1
+  uc.score:
+    image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid:1.4.2
     container_name: uc.score
     restart: unless-stopped
     environment:
-      - UniComm.Config=/app/sc.config.json
+      UniComm.Config: "/app/sc.config.json"
+      mongo_url: "mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0"
+      mongo_db: "dbuc1"
     ports:
       - "8881:80"
       - "4443:443"
     volumes:
       - ./config/sc.config.json:/app/sc.config.json
     networks:
-      - unic-chat-free
+      - unic-chat
+    depends_on:
+      - unic.chat
 
 networks:
-  unic-chat-free:
+  unic-chat:
     driver: bridge
 
 volumes:

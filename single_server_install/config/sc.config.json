@@ -6,8 +6,8 @@
     "Names": "Mongo",
     "Mongo": {
       "Type": "DbConStringEntry",
-      "ConnectionString": "mongodb://ucusername:ucpassword@mongodb:27017/db_name?replicaSet=rs0",
-      "DataBase": "db_name"
+      "ConnectionString": "{%mongo_url%}",
+      "DataBase": "{%mongo_db%}"
     }
   },
 
