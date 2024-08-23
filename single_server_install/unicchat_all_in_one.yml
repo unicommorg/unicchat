@@ -1,4 +1,4 @@
-version: "3"
+version: "3.5"
 services:
   unic.chat:
     container_name: unic.chat.appserver
@@ -10,7 +10,9 @@ services:
       - ROOT_URL=http://localhost:8080
       - PORT=8080
       - DEPLOY_METHOD=docker
-      - UNIC_SOLID_HOST=http://uc.score:8881
+      - UNIC_SOLID_HOST=http://uc.score:8081
+    volumes:
+      - chat_data:/app/uploads
     ports:
       - "8080:8080"
     networks:
@@ -33,7 +35,6 @@ services:
       MONGODB_INITIAL_PRIMARY_PORT_NUMBER: ${MONGODB_INITIAL_PRIMARY_PORT_NUMBER:-27017}
       MONGODB_ADVERTISED_HOSTNAME: ${MONGODB_ADVERTISED_HOSTNAME:-mongodb}
       MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL:-true}
-# указать свой пароль
       MONGODB_ROOT_PASSWORD: "rootpassword"
       MONGODB_USERNAME: "ucusername"
       MONGODB_PASSWORD: "ucpassword"
@@ -43,15 +44,14 @@ services:
 
   uc.score:
     image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid:1.4.2
-    container_name: uc.score
-    restart: unless-stopped
+    container_name: uc.score.manager
+    restart: on-failure
     environment:
-      UniComm.Config: "/app/sc.config.json"
-      mongo_url: "mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0"
-      mongo_db: "dbuc1"
+      - UniComm.Config=/app/sc.config.json
+      - mongo_url=mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0
+      - mongo_db=dbuc1
     ports:
-      - "8881:80"
-      - "4443:443"
+      - "8081:80"
     volumes:
       - ./config/sc.config.json:/app/sc.config.json
     networks:
@@ -65,4 +65,6 @@ networks:
 
 volumes:
   mongodb_data:
+    driver: local
+  chat_data:
     driver: local
