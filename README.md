@@ -46,7 +46,7 @@ RAM 16 Gb;
 
 1. На виртуальной машине выполните команду `grep avx /proc/cpuinfo` или аналогичную для вашей ОС. 
    2. Если в ответе вы не видите AVX, то вам нужно
-      в файле `./single_server_install/unicchat_all_in_one.yml` в строке
+      в файле `./single_server_install/unicchat.yml` в строке
       `image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-5.0}` отредактировать версию mongodb, указав ее ниже 5.0, 
       например, 4.4, `image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}`
    3. Если AVX на вашем сервере поддерживается (в ответе есть строки с поддержкой AVX), то ничего дополнительно делать не нужно.
@@ -61,7 +61,7 @@ RAM 16 Gb;
   cr.yandex
 ```
 2. Перейдите в каталог `./single_server_install`
-3. Запустить сервер, для этого выполните команду `docker compose -f unicchat_all_in_one.yml up -d`
+3. Запустить сервер, для этого выполните команду `docker compose -f unicchat.yml up -d`
 4. Дождитесь пока будут загружены образы компонент, это может занять какое-то время. После загрузки, компоненты запустятся автоматически.
 5. Успешный запуск компонент будет отображаться в терминале:
    ![](./assets/server-started.png "Пример отображения запуска компонент")

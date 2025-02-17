@@ -10,7 +10,7 @@ services:
       - ROOT_URL=http://localhost:8080
       - PORT=8080
       - DEPLOY_METHOD=docker
-      - UNIC_SOLID_HOST=http://uc.score:8081
+      - UNIC_SOLID_HOST=http://Internal_IP:8081  # укажите ваш внутренний IP-адрес
     volumes:
       - chat_data:/app/uploads
     ports:
@@ -21,7 +21,7 @@ services:
       - mongodb
 
   mongodb:
-    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-5.0}
+    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}  # укажите версию согласно инструкции
     container_name: unic.chat.db.mongo
     restart: on-failure
     volumes:
@@ -41,19 +41,16 @@ services:
       MONGODB_DATABASE: "dbuc1"
     networks:
       - unic-chat
+    ports:
+      - "27017:27017"
 
   uc.score:
-    image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid/prod:prod250211
+    image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid:v250211
     container_name: uc.score.manager
     restart: on-failure
-    environment:
-      - UniComm.Config=/app/sc.config.json
-      - mongo_url=mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0
-      - mongo_db=dbuc1
+    env_file: ./app/environment.env
     ports:
-      - "8081:80"
-    volumes:
-      - ./config/sc.config.json:/app/sc.config.json
+      - "8081:8080"
     networks:
       - unic-chat
     depends_on:
