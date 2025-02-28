@@ -11,6 +11,7 @@ services:
       - PORT=8080
       - DEPLOY_METHOD=docker
       - UNIC_SOLID_HOST=http://Internal_IP:8081  # укажите ваш внутренний IP-адрес
+      - LIVEKIT_HOST=wss://lk-yc.unic.chat # ВКС по умолчанию развернут и поддерживается компанией Uniccom. При необходимости, возможно настроить и использовать собственное решение.
     volumes:
       - chat_data:/app/uploads
     ports:
