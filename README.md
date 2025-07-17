@@ -66,7 +66,7 @@ RAM 16 Gb;
    sudo certbot --nginx -d app.unic.chat 
    ```
 3. Создайте файл конфигурации Nginx для UnicChat, например, `/etc/nginx/sites-available/app.unic.chat`:
-   ``` nginx
+```nginx
 
 upstream internal {
     server 127.0.0.1:8080;
