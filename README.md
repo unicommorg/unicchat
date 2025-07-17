@@ -52,8 +52,8 @@ RAM 16 Gb;
    grep avx /proc/cpuinfo
    ```
    или аналогичную для вашей ОС.
-2. Если в ответе вы не видите AVX, то в файле `./single_server_install/unicchat.yml` в строке `image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}` убедитесь, что указана версия MongoDB 4.4 или ниже.
-3. Если AVX поддерживается (в ответе есть строки с поддержкой AVX), то ничего дополнительно делать не нужно.
+2. Если в ответе вы не видите AVX, то в файле `./single_server_install/unicchat.yml` в строке `image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}` убедитесь, что указана версия MongoDB 4.4.
+3. Если AVX поддерживается (в ответе есть строки с поддержкой AVX), то можете поставить версию от 5 и выше.
 
 ## Шаг 5. Настройка HTTPS
 1. Установите Certbot для получения SSL-сертификата:
@@ -65,7 +65,7 @@ RAM 16 Gb;
    ```shell
    sudo certbot --nginx -d app.unic.chat -d www.app.unic.chat
    ```
-3. Создайте файл конфигурации Nginx для UnicChat, например, `/etc/nginx/sites-available/unicchat`:
+3. Создайте файл конфигурации Nginx для UnicChat, например, `/etc/nginx/sites-available/app.unic.chat`:
    ```nginx
    upstream internal {
        server 127.0.0.1:8080;
@@ -126,7 +126,7 @@ RAM 16 Gb;
    ```
 4. Активируйте конфигурацию:
    ```shell
-   sudo ln -s /etc/nginx/sites-available/unicchat /etc/nginx/sites-enabled/
+   sudo ln -s /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-enabled/app.unic.chat
    sudo nginx -t
    sudo systemctl reload nginx
    ```
@@ -143,7 +143,7 @@ RAM 16 Gb;
        environment:
          - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0
          - MONGO_OPLOG_URL=mongodb://ucusername:ucpassword@mongodb:27017/local
-         - ROOT_URL=https://app.unic.chat
+         - ROOT_URL=http://localhost:8080
          - PORT=8080
          - DEPLOY_METHOD=docker
          - UNIC_SOLID_HOST=http://Internal_IP:8081  # укажите ваш внутренний IP-адрес
@@ -233,9 +233,9 @@ RAM 16 Gb;
 6. После запуска компонент, UnicChat будет доступен по адресу `https://app.unic.chat`.
 
 ## Шаг 8. Обновление настроек MongoDB
-1. Подключитесь к контейнеру MongoDB:
+1. Подключитесь к контейнеру MongoDB с использованием root-учетной записи:
    ```shell
-   docker exec -it unic.chat.db.mongo mongosh
+   docker exec -it unic.chat.db.mongo mongosh -u root -p rootpassword
    ```
 2. Перейдите в базу данных `dbuc1`:
    ```javascript
