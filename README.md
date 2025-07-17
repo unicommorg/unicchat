@@ -63,67 +63,64 @@ RAM 16 Gb;
    ```
 2. Получите SSL-сертификат для домена `app.unic.chat`:
    ```shell
-   sudo certbot --nginx -d app.unic.chat -d www.app.unic.chat
+   sudo certbot --nginx -d app.unic.chat 
    ```
 3. Создайте файл конфигурации Nginx для UnicChat, например, `/etc/nginx/sites-available/app.unic.chat`:
    ``` nginx
-   upstream internal {
-       server 127.0.0.1:8080;
-   }
 
-   # HTTPS Server
-   server {
-       server_name app.unic.chat www.app.unic.chat;
+upstream internal {
+    server 127.0.0.1:8080;
+}
 
-       client_max_body_size 200M;
+server {
+    listen 443 ssl;
+    server_name app.unic.chat;
 
-       error_log /var/log/nginx/app.unicchat.internal.error.log;
-       access_log /var/log/nginx/app.unicchat.internal.access.log;
+    client_max_body_size 200M;
 
-       add_header Access-Control-Allow-Origin $cors_origin_header always;
-       add_header Access-Control-Allow-Credentials $cors_cred;
-       add_header "Access-Control-Allow-Methods" "GET, POST, OPTIONS, HEAD";
-       add_header "Access-Control-Allow-Headers" "Authorization, Origin, X-Requested-With, Content-Type, Accept";
+    error_log /var/log/nginx/app.unic.chat.error.log;
+    access_log /var/log/nginx/app.unic.chat.access.log;
 
-       if ($request_method = 'OPTIONS') {
-           return 204 no-content;
-       }
+    # CORS-заголовки
+    add_header Access-Control-Allow-Origin * always;
+    add_header Access-Control-Allow-Credentials true;
+    add_header "Access-Control-Allow-Methods" "GET, POST, OPTIONS, HEAD";
+    add_header "Access-Control-Allow-Headers" "Authorization, Origin, X-Requested-With, Content-Type, Accept";
 
-       location / {
-           proxy_pass http://internal;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection "upgrade";
-           proxy_set_header Host $http_host;
+    # Preflight-запросы
+    if ($request_method = OPTIONS) {
+        return 204;
+    }
 
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto https;
-           proxy_set_header X-Nginx-Proxy true;
+    location / {
+        proxy_pass http://internal;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $http_host;
 
-           proxy_redirect off;
-       }
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Nginx-Proxy true;
 
-       listen 443 ssl;
-       ssl_certificate /etc/letsencrypt/live/app.unic.chat/fullchain.pem;
-       ssl_certificate_key /etc/letsencrypt/live/app.unic.chat/privkey.pem;
-       include /etc/letsencrypt/options-ssl-nginx.conf;
-       ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-   }
+        proxy_redirect off;
+    }
 
-   server {
-       if ($host = www.app.unic.chat) {
-           return 301 https://$host$request_uri;
-       }
+    ssl_certificate /etc/letsencrypt/live/app.unic.chat/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/app.unic.chat/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
 
-       if ($host = app.unic.chat) {
-           return 301 https://$host$request_uri;
-       }
+server {
+    listen 80;
+    server_name app.unic.chat;
 
-       server_name app.unic.chat www.app.unic.chat;
-       listen 80;
-   }
-   ```
+    # HTTP перенаправление на HTTPS
+    return 301 https://$host$request_uri;
+}
+ ```
 4. Активируйте конфигурацию:
    ```shell
    sudo ln -s /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-enabled/app.unic.chat
