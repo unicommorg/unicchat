@@ -36,15 +36,28 @@ CPU 4 cores 1.7ghz, с набором инструкций FMA3, SSE4.2, AVX 2.0
 RAM 16 Gb;
 250 Gb HDD\SSD;
 ```
+Для ОС Ubuntu 20+ предлагаем воспользоваться нашими краткими инструкциями. Для других ОС воспользуйтесь инструкциями, размещенными в сети Интернет.
+
+* Установить docker и docker-compose  https://docs.docker.com/engine/install/ubuntu/
+* Установить nginx
+```shell
+sudo apt install nginx
+```
+Установить certbot и плагин python3-certbot-nginx
+```shell
+sudo apt install certbot python3-certbot-nginx
+```
+Установить git
+```shell
+apt-get install git
+```
+
 
 ## Шаг 2. Клонирование репозитория
 1. Выполните на сервере:
    ```shell
    git clone https://github.com/unicommorg/unicchat.git
    ```
-
-## Шаг 3. Внешние зависимости
-На виртуальную машину установите `docker`, `docker-compose`, и `nginx`, для этого воспользуйтесь инструкциями для вашей ОС, размещенными в сети Интернет.
 
 ## Шаг 4. Проверка версии MongoDB
 1. На виртуальной машине выполните команду:
@@ -56,160 +69,42 @@ RAM 16 Gb;
 3. Если AVX поддерживается (в ответе есть строки с поддержкой AVX), то можете поставить версию от 5 и выше.
 
 ## Шаг 5. Настройка HTTPS
-1. Установите Certbot для получения SSL-сертификата:
-   ```shell
-   sudo apt-get update
-   sudo apt-get install certbot python3-certbot-nginx
-   ```
-2. Получите SSL-сертификат для домена `app.unic.chat`:
+1. Ниже примеры для app.unic.chat, поменяйте их для своего доменного имени.
+2. Получите SSL-сертификат для домена `app.unic.chat`, замените на ваше доменное имя:
    ```shell
    sudo certbot --nginx -d app.unic.chat 
    ```
-3. Создайте файл конфигурации Nginx для UnicChat, например, `/etc/nginx/sites-available/app.unic.chat`:
-```nginx
+или
+   ```shell
+   sudo certbot --certonly -d app.unic.chat 
+   ```
+4. Создайте файл конфигурации Nginx для UnicChat, например, `/etc/nginx/sites-available/app.unic.chat`.
+5. Скопируйте содержимое конфигурации из директории ./nginx в `/etc/nginx/sites-available/app.unic.chat`
+6. Переместите файл options-ssl-nginx.conf из директории ./nginx в /etc/letsencrypt/ .
 
-upstream internal {
-    server 127.0.0.1:8080;
-}
+Сгенерируйте ssl-dhparams.pem
 
-server {
-    listen 443 ssl;
-    server_name app.unic.chat;
+``` shell
+sudo openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
+```
 
-    client_max_body_size 200M;
-
-    error_log /var/log/nginx/app.unic.chat.error.log;
-    access_log /var/log/nginx/app.unic.chat.access.log;
-
-    # CORS-заголовки
-    add_header Access-Control-Allow-Origin * always;
-    add_header Access-Control-Allow-Credentials true;
-    add_header "Access-Control-Allow-Methods" "GET, POST, OPTIONS, HEAD";
-    add_header "Access-Control-Allow-Headers" "Authorization, Origin, X-Requested-With, Content-Type, Accept";
-
-    # Preflight-запросы
-    if ($request_method = OPTIONS) {
-        return 204;
-    }
-
-    location / {
-        proxy_pass http://internal;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $http_host;
-
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Nginx-Proxy true;
-
-        proxy_redirect off;
-    }
-
-    ssl_certificate /etc/letsencrypt/live/app.unic.chat/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/app.unic.chat/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-    listen 80;
-    server_name app.unic.chat;
-
-    # HTTP перенаправление на HTTPS
-    return 301 https://$host$request_uri;
-}
- ```
-4. Активируйте конфигурацию:
+6. Замените все вхождения app.unic.chat в конфигурации на ваше доменное имя
+``` shell  
+  sed -i 's/app.unic.chat/new_name/g' app.unic.chat
+```
+7. Переименуйте файл app.unic.chat на ваше доменное имя
+   
+8.  Активируйте конфигурацию:
    ```shell
    sudo ln -s /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-enabled/app.unic.chat
    sudo nginx -t
    sudo systemctl reload nginx
    ```
-5. Отключите конфигурацию nginx  по умолчанию
+9. Отключите конфигурацию nginx  по умолчанию
 ``` shell
 sudo rm /etc/nginx/sites-enabled/default
 ```
-## Шаг 6. Обновление конфигурации
-1. Убедитесь, что файл `./single_server_install/unicchat.yml` содержит следующую конфигурацию:
-   ```yaml
-   version: "3.5"
-   services:
-     unic.chat:
-       container_name: unic.chat.appserver
-       image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.70
-       restart: on-failure
-       environment:
-         - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0
-         - MONGO_OPLOG_URL=mongodb://ucusername:ucpassword@mongodb:27017/local
-         - ROOT_URL=http://localhost:8080
-         - PORT=8080
-         - DEPLOY_METHOD=docker
-         - UNIC_SOLID_HOST=http://Internal_IP:8081  # укажите ваш внутренний IP-адрес
-         - LIVEKIT_HOST=wss://lk-yc.unic.chat
-       volumes:
-         - chat_data:/app/uploads
-       ports:
-         - "8080:8080"
-       networks:
-         - unic-chat
-       depends_on:
-         - mongodb
 
-     mongodb:
-       image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}
-       container_name: unic.chat.db.mongo
-       restart: on-failure
-       volumes:
-         - mongodb_data:/bitnami/mongodb
-       environment:
-         MONGODB_REPLICA_SET_MODE: primary
-         MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME:-rs0}
-         MONGODB_REPLICA_SET_KEY: ${MONGODB_REPLICA_SET_KEY:-rs0key}
-         MONGODB_PORT_NUMBER: ${MONGODB_PORT_NUMBER:-27017}
-         MONGODB_INITIAL_PRIMARY_HOST: ${MONGODB_INITIAL_PRIMARY_HOST:-mongodb}
-         MONGODB_INITIAL_PRIMARY_PORT_NUMBER: ${MONGODB_INITIAL_PRIMARY_PORT_NUMBER:-27017}
-         MONGODB_ADVERTISED_HOSTNAME: ${MONGODB_ADVERTISED_HOSTNAME:-mongodb}
-         MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL:-true}
-         MONGODB_ROOT_PASSWORD: "rootpassword"
-         MONGODB_USERNAME: "ucusername"
-         MONGODB_PASSWORD: "ucpassword"
-         MONGODB_DATABASE: "dbuc1"
-       networks:
-         - unic-chat
-       ports:
-         - "27017:27017"
-
-     uc.score:
-       image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid/prod:prod250421
-       container_name: uc.score.manager
-       restart: on-failure
-       env_file: ./app/environment.env
-       ports:
-         - "8081:8080"
-       networks:
-         - unic-chat
-       depends_on:
-         - unic.chat
-
-   networks:
-     unic-chat:
-       driver: bridge
-
-   volumes:
-     mongodb_data:
-       driver: local
-     chat_data:
-       driver: local
-   ```
-2. Убедитесь, что файл `./single_server_install/app/environment.env` содержит следующую конфигурацию:
-   ```
-   UnInit.0="'Mongo': { 'Type': 'DbConStringEntry', 'ConnectionString': 'mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0', 'DataBase': 'dbuc1' }"
-   InitConfig:Names={Mongo}
-   Plugins:Attach={ UniAct Mongo Logger UniVault Tasker db0 Bot Bot.HlpDsk}
-   ```
-3. Замените `Internal_IP` в `UNIC_SOLID_HOST` на фактический внутренний IP-адрес вашего сервера.
 
 ## Шаг 7. Запуск UnicChat
 1. Выполните авторизацию в Docker для скачивания образов:
