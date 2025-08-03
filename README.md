@@ -69,64 +69,121 @@ apt-get install git
 3. Если AVX поддерживается (в ответе есть строки с поддержкой AVX), то можете поставить версию от 5 и выше.
 
 ## Шаг 5. Настройка HTTPS
-1. Ниже примеры для app.unic.chat, поменяйте их для своего доменного имени.
-2. Получите SSL-сертификат для домена `app.unic.chat`, замените на ваше доменное имя:
-   ```shell
-   sudo certbot --nginx -d app.unic.chat 
-   ```
-или
-   ```shell
-   sudo certbot --certonly -d app.unic.chat 
-   ```
-4. Создайте файл конфигурации Nginx для UnicChat, например, `/etc/nginx/sites-available/app.unic.chat`.
-5. Скопируйте содержимое конфигурации из директории ./nginx в `/etc/nginx/sites-available/app.unic.chat`
-6. Переместите файл options-ssl-nginx.conf из директории ./nginx в /etc/letsencrypt/ .
+Пошаговая инструкция по настройке защищенного соединения для вашего сайта.
 
-Сгенерируйте ssl-dhparams.pem
+## 1. Подготовка файлов конфигурации
 
-``` shell
+1. Скопируйте необходимые файлы из папки `./nginx`:
+
+```bash
+sudo cp ./nginx/app.unic.chat /etc/nginx/sites-available/
+sudo cp ./nginx/options-ssl-nginx.conf /etc/letsencrypt/
+```
+2. Замена доменного имени
+Замените все упоминания app.unic.chat на ваше доменное имя в конфигурационном файле:
+
+``` bash
+sudo sed -i 's/app.unic.chat/ваш_домен/g' /etc/nginx/sites-available/app.unic.chat
+```
+3. Получение SSL-сертификата
+Выберите подходящий способ получения сертификата:
+
+Автоматическая настройка (рекомендуется)
+```bash
+sudo certbot --nginx -d ваш_домен
+```
+Только получение сертификата
+```bash
+sudo certbot --certonly -d ваш_домен
+```
+Сгенерируйте параметры Диффи-Хеллмана для дополнительной безопасности:
+
+```bash
 sudo openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
 ```
+4. Переименование конфигурации
+Измените имя конфигурационного файла на ваше доменное имя:
 
-6. Замените все вхождения app.unic.chat в конфигурации на ваше доменное имя
-``` shell  
-  sed -i 's/app.unic.chat/new_name/g' app.unic.chat
+```bash
+sudo mv /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-available/ваш_домен
 ```
-7. Переименуйте файл app.unic.chat на ваше доменное имя
-``` shell
-mv /etc/nginx/sites-available/app.unic.chat  /etc/nginx/sites-available/'ваш_домен'
-```
+5. Активация конфигурации
+Отключите конфигурацию по умолчанию:
 
-   
-9.  Активируйте конфигурацию:
-   ```shell
-   sudo ln -s /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-enabled/app.unic.chat
-   sudo nginx -t
-   sudo systemctl reload nginx
-   ```
-9. Отключите конфигурацию nginx  по умолчанию
-``` shell
+```bash
 sudo rm /etc/nginx/sites-enabled/default
 ```
+Включите новую конфигурацию:
 
+```bash
+sudo ln -s /etc/nginx/sites-available/ваш_домен /etc/nginx/sites-enabled/
+```
+Проверьте синтаксис и перезагрузите nginx:
+
+``` bash
+sudo nginx -t && sudo systemctl reload nginx
+```
 
 ## Шаг 7. Запуск UnicChat
-1. Выполните авторизацию в Docker для скачивания образов:
-   ```shell
-   sudo docker login \
-     --username oauth \
-     --password y0_AgAAAAB3muX6AATuwQAAAAEawLLRAAB9TQHeGyxGPZXkjVDHF1ZNJcV8UQ \
-     cr.yandex
-   ```
-2. Перейдите в каталог `./single_server_install`:
-   ```shell
-   cd single_server_install
-   ```
-3. Запустите сервер, выполнив команду:
-   ```shell
-   docker compose -f unicchat.yml up -d
-   ```
-4. Дождитесь загрузки образов компонент, это может занять некоторое время. После загрузки компоненты запустятся автоматически.
+1. Подготовка конфигурации
+Перейдите в директорию single_server_install
+``` shell
+cd single_server_install
+```
+2. Отредактируйте основной конфиг:
+```bash
+nano config.sh
+```
+Параметры для изменения(можно оставить значения по умолчанию):
+
+```bash
+MONGODB_ROOT_PASSWORD="надежный_пароль_для_root"
+MONGODB_USERNAME="ваш_уникальный_логин" 
+MONGODB_PASSWORD="сложный_пароль_админа"
+MONGODB_DATABASE="название_базы_данных"
+```
+Создание файлов окружения
+```bash
+chmod +x generate_env_files.sh
+./generate_env_files.sh
+```
+Будут созданы 3 файла:
+
+* mongo.env - настройки MongoDB
+
+* appserver.env - конфиг основного сервера
+
+ solid.env - параметры Solid-компонента
+
+Запуск системы
+Авторизация в Yandex Container Registry:
+
+```bash
+sudo docker login \
+  --username oauth \
+  --password y0_AgAAAAB3muX6AATuwQAAAAEawLLRAAB9TQHeGyxGPZXkjVDHF1ZNJcV8UQ \
+  cr.yandex
+```
+Запуск сервисов:
+
+```bash
+docker compose -f unicchat.yml up -d
+```
+Управление сервисом
+Проверка логов:
+```bash
+docker logs unic.chat.appserver -f
+```
+Остановка системы:
+
+```bash
+docker compose -f unicchat.yml down
+```
+Важные заметки
+Безопасность:
+```bash
+chmod 600 *.env  # Ограничиваем доступ к конфигам
+```
 5. Успешный запуск компонент будет отображаться в терминале:
    ![](./assets/server-started.png "Пример отображения запуска компонент")
 
@@ -134,16 +191,16 @@ sudo rm /etc/nginx/sites-enabled/default
 ## Шаг 8. Обновление настроек MongoDB
 1. Подключитесь к контейнеру MongoDB с использованием root-учетной записи:
    ```shell
-   docker exec -it unic.chat.db.mongo mongosh -u root -p rootpassword
+   docker exec -it unic.chat.db.mongo mongosh -u root -p rootpass
    ```
-2. Перейдите в базу данных `dbuc1`:
+2. Перейдите в базу данных `unicchat_db`:
    ```javascript
-   use dbuc1
+   use unicchat_db
    ```
 3. Выполните команды для обновления настроек `Site_Url`:
    ```javascript
-   db.rocketchat_settings.updateOne({"_id":"Site_Url"},{"$set":{"value":"https://app.unic.chat"}})
-   db.rocketchat_settings.updateOne({"_id":"Site_Url"},{"$set":{"packageValue":"https://app.unic.chat"}})
+   db.rocketchat_settings.updateOne({"_id":"Site_Url"},{"$set":{"value":"https://ваш_домен"}})
+   db.rocketchat_settings.updateOne({"_id":"Site_Url"},{"$set":{"packageValue":"https://ваш_домен"}})
    ```
 4. Выйдите из MongoDB:
    ```shell
