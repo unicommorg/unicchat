@@ -21,5 +21,8 @@ DEPLOY_METHOD="docker"
 UNIC_SOLID_HOST="http://$(hostname -I | awk '{print $1}'):8881"
 
 # Solid Configuration
-INIT_CONFIG_NAMES="{Mongo }"
+INIT_CONFIG_NAMES="{Mongo}"
 PLUGINS_ATTACH="'UniAct Mongo Logger UniVault Tasker'"
+
+
+
