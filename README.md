@@ -190,7 +190,7 @@ chmod +x generate_env_files.sh
 
 * appserver.env - конфиг основного сервера
 
- solid.env - параметры Solid-компонента
+* solid.env - параметры Solid-компонента
 
 Запуск системы
 Авторизация в Yandex Container Registry:
