@@ -37,23 +37,32 @@ RAM 16 Gb;
 250 Gb HDD\SSD;
 ```
 Для ОС Ubuntu 20+ предлагаем воспользоваться нашими краткими инструкциями. Для других ОС воспользуйтесь инструкциями, размещенными в сети Интернет.
+##### Рекоменндуемые компоненты для установки 
+* ОС: Ubuntu 20+
+* Веб-сервер: NGINX
+* SSL: Certbot
+* Контейнеризация: Docker
 
-* Установить docker и docker-compose  https://docs.docker.com/engine/install/ubuntu/
-* Установить nginx
+
+
+
+## Шаг 2. Внешние зависимости
+* Установите docker и docker-compose  https://docs.docker.com/engine/install/ubuntu/
+* Установите nginx
 ```shell
 sudo apt install nginx
 ```
-Установить certbot и плагин python3-certbot-nginx
+Установите certbot и плагин python3-certbot-nginx
 ```shell
 sudo apt install certbot python3-certbot-nginx
 ```
-Установить git
+Установите git
 ```shell
-apt-get install git
+    sudo apt install git -y
 ```
 
 
-## Шаг 2. Клонирование репозитория
+## Шаг 3. Клонирование репозитория
 1. Выполните на сервере:
    ```shell
    git clone https://github.com/unicommorg/unicchat.git
@@ -101,13 +110,14 @@ sudo certbot --certonly -d ваш_домен
 ```bash
 sudo openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
 ```
-4. Переименование конфигурации
-Измените имя конфигурационного файла на ваше доменное имя:
+4. Изменение имени конфигурации nginx
+  Измените имя конфигурационного файла на ваше доменное имя:
 
 ```bash
 sudo mv /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-available/ваш_домен
 ```
 5. Активация конфигурации
+
 Отключите конфигурацию по умолчанию:
 
 ```bash
