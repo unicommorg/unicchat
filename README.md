@@ -112,12 +112,14 @@ sudo cp ./nginx/app.unic.chat /etc/nginx/sites-available/
 sudo cp ./nginx/options-ssl-nginx.conf /etc/letsencrypt/
 ```
 2. Замена доменного имени
+
 Замените все упоминания app.unic.chat на ваше доменное имя в конфигурационном файле:
 
 ``` bash
 sudo sed -i 's/app.unic.chat/ваш_домен/g' /etc/nginx/sites-available/app.unic.chat
 ```
 3. Получение SSL-сертификата
+
 Выберите подходящий способ получения сертификата:
 
 Автоматическая настройка (рекомендуется)
@@ -134,6 +136,7 @@ sudo certbot --certonly -d ваш_домен
 sudo openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
 ```
 4. Изменение имени конфигурации nginx
+ 
   Измените имя конфигурационного файла на ваше доменное имя:
 
 ```bash
