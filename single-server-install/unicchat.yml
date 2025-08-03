@@ -1,65 +1,49 @@
-version: "3.5"
+version: "3"
 services:
-  unic.chat:
-    container_name: unic.chat.appserver
-    image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.70
-    restart: on-failure
-    environment:
-      - MONGO_URL=mongodb://ucusername:ucpassword@mongodb:27017/dbuc1?replicaSet=rs0
-      - MONGO_OPLOG_URL=mongodb://ucusername:ucpassword@mongodb:27017/local
-      - ROOT_URL=http://localhost:8080
-      - PORT=8080
-      - DEPLOY_METHOD=docker
-      - UNIC_SOLID_HOST=http://Internal_IP:8081  # укажите ваш внутренний IP-адрес
-      - LIVEKIT_HOST=wss://lk-yc.unic.chat # ВКС по умолчанию развернут и поддерживается компанией Uniccom. При необходимости, возможно настроить и использовать собственное решение.
-    volumes:
-      - chat_data:/app/uploads
-    ports:
-      - "8080:8080"
-    networks:
-      - unic-chat
-    depends_on:
-      - mongodb
-
   mongodb:
-    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}  # укажите версию согласно инструкции
+    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}
     container_name: unic.chat.db.mongo
     restart: on-failure
     volumes:
       - mongodb_data:/bitnami/mongodb
-    environment:
-      MONGODB_REPLICA_SET_MODE: primary
-      MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME:-rs0}
-      MONGODB_REPLICA_SET_KEY: ${MONGODB_REPLICA_SET_KEY:-rs0key}
-      MONGODB_PORT_NUMBER: ${MONGODB_PORT_NUMBER:-27017}
-      MONGODB_INITIAL_PRIMARY_HOST: ${MONGODB_INITIAL_PRIMARY_HOST:-mongodb}
-      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: ${MONGODB_INITIAL_PRIMARY_PORT_NUMBER:-27017}
-      MONGODB_ADVERTISED_HOSTNAME: ${MONGODB_ADVERTISED_HOSTNAME:-mongodb}
-      MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL:-true}
-      MONGODB_ROOT_PASSWORD: "rootpassword"
-      MONGODB_USERNAME: "ucusername"
-      MONGODB_PASSWORD: "ucpassword"
-      MONGODB_DATABASE: "dbuc1"
-    networks:
-      - unic-chat
+    env_file:
+      - mongo.env
     ports:
       - "27017:27017"
-
-  uc.score:
-    image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid/prod:prod250421
-    container_name: uc.score.manager
-    restart: on-failure
-    env_file: ./app/environment.env
-    ports:
-      - "8081:8080"
     networks:
-      - unic-chat
-    depends_on:
-      - unic.chat
+      - unicchat-backend
+      - unicchat-frontend
+  uc.media.score:
+    image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid/prod:prod250421
+    container_name: unic.chat.solid
+    restart: unless-stopped
+    ports:
+      - 8881:8080
+      - 4443:443
+    env_file:
+      - solid.env
+    networks:
+      - unicchat-backend
+  unic.chat.appserver:
+    container_name: unic.chat.appserver
+    image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.69
+    restart: on-failure
+    env_file:
+      - appserver.env
+    volumes:
+      - chat_data:/app/uploads
+    ports:
+      - "8080:3000"
+    networks:
+      - unicchat-frontend
 
 networks:
-  unic-chat:
+  unicchat-frontend:
     driver: bridge
+    external: true
+  unicchat-backend:
+    driver: bridge
+    external: true
 
 volumes:
   mongodb_data:
