@@ -93,8 +93,12 @@ sudo openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
   sed -i 's/app.unic.chat/new_name/g' app.unic.chat
 ```
 7. Переименуйте файл app.unic.chat на ваше доменное имя
+``` shell
+mv /etc/nginx/sites-available/app.unic.chat  /etc/nginx/sites-available/'ваш_домен'
+```
+
    
-8.  Активируйте конфигурацию:
+9.  Активируйте конфигурацию:
    ```shell
    sudo ln -s /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-enabled/app.unic.chat
    sudo nginx -t
