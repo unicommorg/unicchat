@@ -1,1 +1,1 @@
-sktest.unic.chat
+app.unic.chat
