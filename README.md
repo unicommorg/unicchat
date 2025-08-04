@@ -116,7 +116,7 @@ sudo cp ./nginx/options-ssl-nginx.conf /etc/letsencrypt/
 Замените все упоминания app.unic.chat на ваше доменное имя в конфигурационном файле:
 
 ``` bash
-sudo sed -i 's/app.unic.chat/ваш_домен/g' /etc/nginx/sites-available/app.unic.chat
+sudo sed -i 's/app.unic.chat/unicchat.yourdomain.com/g' /etc/nginx/sites-available/app.unic.chat
 ```
 3. Получение SSL-сертификата
 
@@ -124,11 +124,11 @@ sudo sed -i 's/app.unic.chat/ваш_домен/g' /etc/nginx/sites-available/app
 
 Автоматическая настройка (рекомендуется)
 ```bash
-sudo certbot --nginx -d ваш_домен
+sudo certbot --nginx -d unicchat.yourdomain.com
 ```
 Только получение сертификата
 ```bash
-sudo certbot --certonly -d ваш_домен
+sudo certbot --certonly -d unicchat.yourdomain.com
 ```
 Сгенерируйте параметры Диффи-Хеллмана для дополнительной безопасности:
 
@@ -140,7 +140,7 @@ sudo openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
   Измените имя конфигурационного файла на ваше доменное имя:
 
 ```bash
-sudo mv /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-available/ваш_домен
+sudo mv /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-available/unicchat.yourdomain.com
 ```
 5. Активация конфигурации
 
@@ -152,7 +152,7 @@ sudo rm /etc/nginx/sites-enabled/default
 Включите новую конфигурацию:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/ваш_домен /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/unicchat.yourdomain.com /etc/nginx/sites-enabled/
 ```
 Проверьте синтаксис и перезагрузите nginx:
 
@@ -237,8 +237,8 @@ chmod 600 *.env  # Ограничиваем доступ к конфигам
    ```
 3. Выполните команды для обновления настроек `Site_Url`:
    ```javascript
-   db.rocketchat_settings.updateOne({"_id":"Site_Url"},{"$set":{"value":"https://ваш_домен"}})
-   db.rocketchat_settings.updateOne({"_id":"Site_Url"},{"$set":{"packageValue":"https://ваш_домен"}})
+   db.rocketchat_settings.updateOne({"_id":"Site_Url"},{"$set":{"value":"https://unicchat.yourdomain.com"}})
+   db.rocketchat_settings.updateOne({"_id":"Site_Url"},{"$set":{"packageValue":"https://unicchat.yourdomain.com"}})
    ```
 4. Выйдите из MongoDB:
    ```shell
