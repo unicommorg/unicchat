@@ -105,63 +105,54 @@ sudo apt install certbot python3-certbot-nginx
 
 <!-- TOC --><a name="-5-https"></a>
 ## Шаг 5. Настройка HTTPS
-Пошаговая инструкция по настройке защищенного соединения для вашего сайта.
 
-1. Скопируйте необходимые файлы из папки `./nginx`:
-
+1. Подготовка домена (выполняется один раз)
 ```bash
-sudo cp ./nginx/app.unic.chat /etc/nginx/sites-available/
-sudo cp ./nginx/options-ssl-nginx.conf /etc/letsencrypt/
+# Запишите ваш домен в конфигурационный файл
+echo "yourdomain.com" > ./nginx/domain.txt
+
+# Проверьте, что DNS-запись домена ведёт на IP вашего сервера
+dig yourdomain.com +short
 ```
-2. Замена доменного имени
 
-Замените все упоминания app.unic.chat на ваше доменное имя в конфигурационном файле:
-
-``` bash
-sudo sed -i 's/app.unic.chat/unicchat.yourdomain.com/g' /etc/nginx/sites-available/app.unic.chat
-```
-3. Получение SSL-сертификата
-
-Выберите подходящий способ получения сертификата:
-
-Автоматическая настройка (рекомендуется)
+2. Генерация конфигурации Nginx
 ```bash
-sudo certbot --nginx -d unicchat.yourdomain.com
-```
-Только получение сертификата
-```bash
-sudo certbot --certonly -d unicchat.yourdomain.com
-```
-Сгенерируйте параметры Диффи-Хеллмана для дополнительной безопасности:
+# Сделайте скрипт исполняемым (если ещё не сделано)
+chmod +x ./nginx/generate_nginx_conf.sh
 
+# Запустите генератор конфига
+./nginx/generate_nginx_conf.sh
+```
+
+3. Развёртывание конфигурации
 ```bash
+# Скопируйте конфиг в Nginx
+sudo cp ./nginx/yourdomain.com.conf /etc/nginx/sites-available/
+
+# Скопируйте SSL-параметры (если файл существует)
+[ -f ./nginx/options-ssl-nginx.conf ] && sudo cp ./nginx/options-ssl-nginx.conf /etc/letsencrypt/
+```
+
+4. Настройка SSL
+```bash
+# Получите сертификат (автоматическая настройка)
+sudo certbot --nginx -d yourdomain.com
+
+# Сгенерируйте DH-параметры
 sudo openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
 ```
-4. Изменение имени конфигурации nginx
- 
-  Измените имя конфигурационного файла на ваше доменное имя:
 
-```bash
-sudo mv /etc/nginx/sites-available/app.unic.chat /etc/nginx/sites-available/unicchat.yourdomain.com
-```
 5. Активация конфигурации
-
-Отключите конфигурацию по умолчанию:
-
 ```bash
-sudo rm /etc/nginx/sites-enabled/default
-```
-Включите новую конфигурацию:
+# Включите сайт
+sudo ln -s /etc/nginx/sites-available/yourdomain.com.conf /etc/nginx/sites-enabled/
 
-```bash
-sudo ln -s /etc/nginx/sites-available/unicchat.yourdomain.com /etc/nginx/sites-enabled/
-```
-Проверьте синтаксис и перезагрузите nginx:
+# Отключите дефолтную конфигурацию
+sudo rm -f /etc/nginx/sites-enabled/default
 
-``` bash
+# Проверьте конфигурацию и перезагрузите Nginx
 sudo nginx -t && sudo systemctl reload nginx
 ```
-
 <!-- TOC --><a name="-6-unicchat"></a>
 ## Шаг 6. Запуск UnicChat
 1. Подготовка конфигурации
