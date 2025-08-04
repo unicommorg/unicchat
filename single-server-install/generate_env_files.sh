@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Load configuration from config.sh
-CONFIG_FILE="config.sh"
+# Load configuration from config.txt
+CONFIG_FILE="config.txt"
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: $CONFIG_FILE not found!"
     exit 1
 fi
 source "$CONFIG_FILE"
 
-# Default values if not set in config.sh
+# Default values if not set in config.txt
 MONGODB_REPLICA_SET_MODE=${MONGODB_REPLICA_SET_MODE:-primary}
 MONGODB_REPLICA_SET_NAME=${MONGODB_REPLICA_SET_NAME:-rs0}
 MONGODB_REPLICA_SET_KEY=${MONGODB_REPLICA_SET_KEY:-rs0key}
