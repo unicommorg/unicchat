@@ -25,7 +25,7 @@ ROOT_URL=${ROOT_URL:-http://localhost:3000}
 PORT=${PORT:-3000}
 DEPLOY_METHOD=${DEPLOY_METHOD:-docker}
 
-UNIC_SOLID_HOST=${UNIC_SOLID_HOST:-http://\${hostname}}
+UNIC_SOLID_HOST=${UNIC_SOLID_HOST:-http://\${hostname}
 INIT_CONFIG_NAMES=${INIT_CONFIG_NAMES:-"{Mongo}"}
 PLUGINS_ATTACH=${PLUGINS_ATTACH:-"'UniAct Mongo Logger UniVault Tasker'"}
 
