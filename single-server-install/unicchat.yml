@@ -24,6 +24,9 @@ services:
     image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid/prod:prod250421
     container_name: unic.chat.solid
     restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
     ports:
       - 8881:8080
       - 4443:443
@@ -36,6 +39,9 @@ services:
     container_name: unic.chat.appserver
     image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.72.1
     restart: on-failure
+    depends_on:
+      uc.media.score:
+        condition: service_started
     env_file:
       - appserver.env
     volumes:
