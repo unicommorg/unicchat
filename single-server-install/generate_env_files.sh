@@ -65,8 +65,7 @@ echo "Generated appserver.env"
 
 # Generate solid.env
 cat > solid.env << EOL
-# Конфигурация MongoDB: используйте значения из файла multi_server_install/mongodb.yml
-# Источник: https://github.com/unicommorg/unicchat.enterprise/blob/main/multi_server_install/mongodb.yml
+
 # Переменные:
 # - MONGODB_USERNAME: $MONGODB_USERNAME
 # - MONGODB_PASSWORD: $MONGODB_PASSWORD
