@@ -20,7 +20,7 @@ services:
       retries: 3
       start_period: 40s
 
-  uc.media.score:
+  unic.chat.solid:
     image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid/prod:prod250421
     container_name: unic.chat.solid
     restart: unless-stopped
@@ -40,7 +40,7 @@ services:
     image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.72.1
     restart: on-failure
     depends_on:
-      uc.media.score:
+      unic.chat.solid:
         condition: service_started
     env_file:
       - appserver.env
