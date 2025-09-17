@@ -37,7 +37,7 @@ services:
 
   unic.chat.appserver:
     container_name: unic.chat.appserver
-    image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.75
+    image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.76
     restart: on-failure
     depends_on:
       unic.chat.solid:
