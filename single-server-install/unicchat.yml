@@ -1,7 +1,7 @@
 version: "3"
 services:
   mongodb:
-    image: docker.io/bitnami/mongodb:${MONGODB_VERSION:-4.4}
+    image: docker.io/bitnamilegacy/mongodb:${MONGODB_VERSION:-4.4}
     container_name: unic.chat.db.mongo
     restart: on-failure
     volumes:
