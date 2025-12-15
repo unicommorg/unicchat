@@ -1,0 +1,40 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: unicchat.nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/letsencrypt:ro
+      - ./www:/var/www/certbot:ro
+      - nginx-logs:/var/log/nginx
+    networks:
+      - unicchat-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: unicchat.certbot
+    volumes:
+      - ./ssl:/etc/letsencrypt
+      - ./www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM;
+      while :; do
+        certbot renew --webroot -w /var/www/certbot --quiet;
+        sleep 12h;
+      done"
+    networks:
+      - unicchat-network
+    restart: unless-stopped
+
+networks:
+  unicchat-network:
+    external: true
+
+volumes:
+  nginx-logs:
+    driver: local
+

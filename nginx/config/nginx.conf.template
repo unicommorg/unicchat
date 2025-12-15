@@ -1,17 +1,26 @@
-# замените app.unic.chat на ваше DNS имя 
+# Конфигурация Nginx для проксирования
+# Домен будет заменен через скрипт генерации
+
+# ⚠️ ИЗМЕНИТЕ upstream на адрес вашего сервиса!
+# Примеры:
+# - Для контейнера в Docker сети: server unicchat.appserver:3000;
+# - Для сервиса на хосте: server 127.0.0.1:8080;
+# - Для другого контейнера: server container-name:port;
+# - Для внешнего сервера: server example.com:8080;
 
 upstream internal {
-    server 127.0.0.1:8080;
+    server 127.0.0.1:8080;  # ← ИЗМЕНИТЕ НА ВАШ СЕРВИС
 }
 
 server {
     listen 443 ssl;
-    server_name app.unic.chat;
+    http2 on;
+    server_name ${DOMAIN};
 
     client_max_body_size 200M;
 
-    error_log /var/log/nginx/app.unic.chat.error.log;
-    access_log /var/log/nginx/app.unic.chat.access.log;
+    error_log /var/log/nginx/${DOMAIN}.error.log;
+    access_log /var/log/nginx/${DOMAIN}.access.log;
 
     # CORS-заголовки
     add_header Access-Control-Allow-Origin * always;
@@ -39,16 +48,23 @@ server {
         proxy_redirect off;
     }
 
-    ssl_certificate /etc/letsencrypt/live/app.unic.chat/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/app.unic.chat/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
 
 server {
     listen 80;
-    server_name app.unic.chat;
+    server_name ${DOMAIN};
+
+    # Для certbot challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
 
     # HTTP перенаправление на HTTPS
-    return 301 https://$host$request_uri;
+    location / {
+        return 301 https://$host$request_uri;
+    }
 }

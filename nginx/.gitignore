@@ -1,0 +1,9 @@
+config/nginx.conf
+ssl/
+www/
+logs/
+*.log
+*.tmp
+*.bak
+*~
+
