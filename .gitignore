@@ -5,10 +5,13 @@ unicchat_creds.txt
 unicchat_config.txt
 domain.usr.txt
 
-# Generated env files (contain credentials)
-single-server-install/*.env
-single-server-install/*_cred.env
+# Generated env files with credentials (DO NOT COMMIT)
 single-server-install/*_creds.env
+
+# Template env files (safe to commit - no credentials)
+# single-server-install/mongo.env
+# single-server-install/appserver.env
+# single-server-install/logger.env
 
 # Logs
 *.log

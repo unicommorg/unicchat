@@ -221,13 +221,13 @@ prepare_unicchat() {
     echo "MONGODB_ENABLE_JOURNAL=true"
   } > "$dir/mongo.env"
   
-  # Генерируем mongo_cred.env
+  # Генерируем mongo_creds.env
   {
     echo "MONGODB_ROOT_PASSWORD=$MONGODB_ROOT_PASSWORD"
     echo "MONGODB_USERNAME=$MONGODB_USERNAME"
     echo "MONGODB_PASSWORD=$MONGODB_PASSWORD"
     echo "MONGODB_DATABASE=$MONGODB_DATABASE"
-  } > "$dir/mongo_cred.env"
+  } > "$dir/mongo_creds.env"
   
   # Генерируем appserver.env
   {
@@ -237,12 +237,12 @@ prepare_unicchat() {
     echo "DEPLOY_METHOD=docker"
   } > "$dir/appserver.env"
   
-  # Генерируем appserver_cred.env
+  # Генерируем appserver_creds.env
   {
     echo "MONGO_URL=mongodb://$MONGODB_USERNAME:$MONGODB_PASSWORD@unicchat.mongodb:27017/$MONGODB_DATABASE?replicaSet=rs0"
     echo "MONGO_OPLOG_URL=mongodb://$MONGODB_USERNAME:$MONGODB_PASSWORD@unicchat.mongodb:27017/local"
     echo "ROOT_URL=$ROOT_URL"
-  } > "$dir/appserver_cred.env"
+  } > "$dir/appserver_creds.env"
   
   # Генерируем logger.env
   {
@@ -267,11 +267,11 @@ prepare_unicchat() {
     echo "MongoCS=\"mongodb://$LOGGER_USER:$LOGGER_PASSWORD_ENCODED@unicchat.mongodb:27017/$LOGGER_DB?directConnection=true&authSource=$LOGGER_DB&authMechanism=SCRAM-SHA-256\""
   } > "$dir/logger_creds.env"
   
-  # Генерируем vault.env
+  # Генерируем vault_creds.env
   {
     echo "# MongoDB connection for vault service"
     echo "MongoCS=\"mongodb://$VAULT_USER:$VAULT_PASSWORD_ENCODED@unicchat.mongodb:27017/$VAULT_DB?directConnection=true&authSource=$VAULT_DB&authMechanism=SCRAM-SHA-256\""
-  } > "$dir/vault.env"
+  } > "$dir/vault_creds.env"
   
   echo "✅ All env files generated successfully!"
 }
@@ -293,18 +293,18 @@ setup_mongodb_users() {
     return 1
   fi
   
-  # Читаем root password из mongo_cred.env
-  local mongo_cred_file="$dir/mongo_cred.env"
-  if [ ! -f "$mongo_cred_file" ]; then
-    echo "❌ File $mongo_cred_file not found. Run 'Prepare .env files and credentials' first."
+  # Читаем root password из mongo_creds.env
+  local mongo_creds_file="$dir/mongo_creds.env"
+  if [ ! -f "$mongo_creds_file" ]; then
+    echo "❌ File $mongo_creds_file not found. Run 'Prepare .env files and credentials' first."
     return 1
   fi
   
-  local root_password=$(grep '^MONGODB_ROOT_PASSWORD=' "$mongo_cred_file" | cut -d '=' -f2- | tr -d '\r')
+  local root_password=$(grep '^MONGODB_ROOT_PASSWORD=' "$mongo_creds_file" | cut -d '=' -f2- | tr -d '\r')
   local container="unicchat.mongodb"
   
   if [ -z "$root_password" ]; then
-    echo "❌ MONGODB_ROOT_PASSWORD not found in $mongo_cred_file"
+    echo "❌ MONGODB_ROOT_PASSWORD not found in $mongo_creds_file"
     return 1
   fi
   
@@ -403,12 +403,12 @@ EOF
     echo "⚠️ logger_creds.env not found, skipping logger user creation"
   fi
   
-  # Читаем credentials для vault из vault.env
-  local vault_env_file="$dir/vault.env"
-  if [ -f "$vault_env_file" ]; then
-    local vault_mongocs=$(grep '^MongoCS=' "$vault_env_file" | cut -d '=' -f2- | tr -d '\r' | sed 's/^"//;s/"$//')
-    if [ -z "$vault_mongocs" ]; then
-      echo "⚠️ MongoCS not found in vault.env, skipping vault user"
+      # Читаем credentials для vault из vault_creds.env
+      local vault_env_file="$dir/vault_creds.env"
+      if [ -f "$vault_env_file" ]; then
+        local vault_mongocs=$(grep '^MongoCS=' "$vault_env_file" | cut -d '=' -f2- | tr -d '\r' | sed 's/^"//;s/"$//')
+        if [ -z "$vault_mongocs" ]; then
+          echo "⚠️ MongoCS not found in vault_creds.env, skipping vault user"
     else
       # Извлекаем username, password и database из connection string: mongodb://user:pass@host/db
       # Убираем префикс mongodb://
@@ -476,7 +476,7 @@ EOF
       fi
     fi
   else
-    echo "⚠️ vault.env not found, skipping vault user creation"
+        echo "⚠️ vault_creds.env not found, skipping vault user creation"
   fi
   
   echo "✅ MongoDB users configured."
@@ -493,16 +493,16 @@ setup_vault_secrets() {
     return 1
   fi
   
-  # Читаем MONGO_URL из appserver_cred.env
-  local appserver_cred_file="$dir/appserver_cred.env"
-  if [ ! -f "$appserver_cred_file" ]; then
-    echo "❌ File $appserver_cred_file not found. Run 'Prepare .env files and credentials' first."
+  # Читаем MONGO_URL из appserver_creds.env
+  local appserver_creds_file="$dir/appserver_creds.env"
+  if [ ! -f "$appserver_creds_file" ]; then
+    echo "❌ File $appserver_creds_file not found. Run 'Prepare .env files and credentials' first."
     return 1
   fi
   
-  local mongo_url=$(grep '^MONGO_URL=' "$appserver_cred_file" | cut -d '=' -f2- | tr -d '\r')
+  local mongo_url=$(grep '^MONGO_URL=' "$appserver_creds_file" | cut -d '=' -f2- | tr -d '\r')
   if [ -z "$mongo_url" ]; then
-    echo "❌ MONGO_URL not found in $appserver_cred_file"
+    echo "❌ MONGO_URL not found in $appserver_creds_file"
     return 1
   fi
   
@@ -711,7 +711,7 @@ restart_unicchat() {
 update_site_url() {
   echo -e "\n📝 Updating Site_Url in MongoDB…"
   local dir="single-server-install"
-  local env_file="$dir/mongo_cred.env"
+  local env_file="$dir/mongo_creds.env"
   local container="unicchat.mongodb"
   local pwd=$(grep -E '^MONGODB_ROOT_PASSWORD=' "$env_file" | cut -d '=' -f2 | tr -d '\r')
   local url="https://$DOMAIN"

@@ -8,7 +8,7 @@ services:
       - mongodb_data:/bitnami/mongodb
     env_file:
       - mongo.env
-      - mongo_cred.env
+      - mongo_creds.env
     ports:
       - "27017:27017"
     networks:
@@ -31,7 +31,7 @@ services:
     environment:
       - api.logger.url=http://unicchat.logger:8080/
     env_file:
-      - vault.env
+      - vault_creds.env
     cap_add:
       - IPC_LOCK
     command: server
@@ -57,7 +57,7 @@ services:
       - MONGODB_PORT=27017
     env_file:
       - appserver.env
-      - appserver_cred.env
+      - appserver_creds.env
     volumes:
       - chat_data:/app/uploads
     networks:
