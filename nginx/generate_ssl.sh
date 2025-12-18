@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
 # Скрипт для управления SSL сертификатами и nginx
-# Использует данные из domain.usr.txt
+# Использует данные из unicchat_config.txt
 #
 
 set -euo pipefail
 
-# Получаем данные из domain.usr.txt
+# Получаем данные из unicchat_config.txt
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="$SCRIPT_DIR/../domain.usr.txt"
+CONFIG_FILE="$SCRIPT_DIR/../unicchat_config.txt"
 
 # Функция для выбора команды docker compose
 docker_compose() {
@@ -24,17 +24,25 @@ docker_compose() {
 
 load_config() {
     if [ ! -f "$CONFIG_FILE" ]; then
-        echo "❌ Файл domain.usr.txt не найден: $CONFIG_FILE"
-        exit 1
+        echo "❌ Файл unicchat_config.txt не найден: $CONFIG_FILE"
+        return 1
     fi
 
     DOMAIN=$(grep '^DOMAIN=' "$CONFIG_FILE" | cut -d '=' -f2- | tr -d '\r' | tr -d ' ')
     EMAIL=$(grep '^EMAIL=' "$CONFIG_FILE" | cut -d '=' -f2- | tr -d '\r' | tr -d ' ')
 
-    if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ]; then
-        echo "❌ DOMAIN или EMAIL не найдены в domain.usr.txt"
-        exit 1
+    if [ -z "$DOMAIN" ]; then
+        echo "❌ DOMAIN не найден в unicchat_config.txt"
+        return 1
     fi
+
+    if [ -z "$EMAIL" ]; then
+        echo "❌ EMAIL не найден в unicchat_config.txt"
+        echo "   Добавьте строку EMAIL=your@email.com в файл $CONFIG_FILE"
+        return 1
+    fi
+
+    return 0
 }
 
 generate_ssl() {
@@ -43,7 +51,7 @@ generate_ssl() {
         return 1
     fi
 
-    load_config
+    load_config || return 1
     cd "$SCRIPT_DIR"
 
     echo "🔐 Генерация SSL сертификата для домена: $DOMAIN"
@@ -333,7 +341,7 @@ test_config() {
 }
 
 generate_config() {
-    load_config
+    load_config || return 1
     cd "$SCRIPT_DIR"
 
     echo "📝 Генерация конфигурации nginx..."
@@ -375,6 +383,15 @@ generate_config() {
 }
 
 main_menu() {
+    # Загружаем конфигурацию один раз при запуске меню
+    if [ -f "$CONFIG_FILE" ]; then
+        DOMAIN=$(grep '^DOMAIN=' "$CONFIG_FILE" | cut -d '=' -f2- | tr -d '\r' | tr -d ' ')
+        EMAIL=$(grep '^EMAIL=' "$CONFIG_FILE" | cut -d '=' -f2- | tr -d '\r' | tr -d ' ')
+    else
+        DOMAIN=""
+        EMAIL=""
+    fi
+    
     while true; do
         clear
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -382,11 +399,17 @@ main_menu() {
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         
-        if [ -f "$CONFIG_FILE" ]; then
-            load_config
+        if [ -n "$DOMAIN" ]; then
             echo "📋 Конфигурация:"
             echo "   Домен: $DOMAIN"
-            echo "   Email: $EMAIL"
+            if [ -n "$EMAIL" ]; then
+                echo "   Email: $EMAIL"
+            else
+                echo "   Email: не указан (будет запрошен при генерации SSL)"
+            fi
+            echo ""
+        else
+            echo "⚠️  Файл unicchat_config.txt не найден или DOMAIN не указан"
             echo ""
         fi
 
@@ -407,8 +430,15 @@ MENU
         echo ""
 
         case $choice in
-            1) generate_ssl ;;
-            2) generate_config ;;
+            1) 
+                generate_ssl 
+                ;;
+            2) 
+                if [ -z "$DOMAIN" ]; then
+                    load_config
+                fi
+                generate_config 
+                ;;
             3) start_nginx ;;
             4) stop_nginx ;;
             5) restart_nginx ;;
