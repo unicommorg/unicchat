@@ -3,7 +3,7 @@
 # Credentials and config files
 unicchat_creds.txt
 unicchat_config.txt
-domain.usr.txt
+
 
 # Generated env files with credentials (DO NOT COMMIT)
 single-server-install/*_creds.env
