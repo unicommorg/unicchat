@@ -1,18 +1,18 @@
-version: "3"
 services:
-  mongodb:
+  # 1. MongoDB - база данных, должна быть готова до других сервисов
+  unicchat.mongodb:
     image: cr.yandex/crps5m51hmah43pmfb23/mongodb:4.4
-    container_name: unic.chat.db.mongo
+    container_name: unicchat.mongodb
     restart: on-failure
     volumes:
       - mongodb_data:/bitnami/mongodb
     env_file:
       - mongo.env
+      - mongo_creds.env
     ports:
       - "27017:27017"
     networks:
-      - unicchat-backend
-      - unicchat-frontend
+      - unicchat-network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet || exit 1
       interval: 30s
@@ -20,47 +20,91 @@ services:
       retries: 3
       start_period: 40s
 
-  unic.chat.solid:
-    image: cr.yandex/crpi5ll6mqcn793fvu9i/unicchat.solid/prod:prod251021
-    container_name: unic.chat.solid
+  # 2. Vault - зависит от mongodb
+  unicchat.vault:
+    image: cr.yandex/crpi5ll6mqcn793fvu9i/unic/unicvault:prod
+    container_name: unicchat.vault
+    ports:
+      - 8200:80
+    volumes:
+      - vault-data:/vault/file/
+    environment:
+      - api.logger.url=http://unicchat.logger:8080/
+    env_file:
+      - vault_creds.env
+    cap_add:
+      - IPC_LOCK
+    command: server
+    restart: always
+    networks:
+      - unicchat-network
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+
+  # 3. Appserver - зависит от mongodb
+  unicchat.appserver:
+    container_name: unicchat.appserver
+    image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.81-beta.5
+    restart: on-failure
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+    ports:
+      - "8080:3000"
+    environment:
+      - MONGODB_HOST=unicchat.mongodb
+      - MONGODB_PORT=27017
+    env_file:
+      - appserver.env
+      - appserver_creds.env
+    volumes:
+      - chat_data:/app/uploads
+    networks:
+      - unicchat-network
+
+  # 4. Logger - зависит от mongodb
+  unicchat.logger:
+    image: cr.yandex/crpi5ll6mqcn793fvu9i/unic/uniclogger:prod
+    container_name: unicchat.logger
+    ports:
+      - '8082:8080'
+    networks:
+      - unicchat-network
+    restart: unless-stopped
+    env_file:
+      - logger.env
+      - logger_creds.env
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+
+  # 5. Tasker - зависит от mongodb
+  unicchat.tasker:
+    image: cr.yandex/crpi5ll6mqcn793fvu9i/unic/unicchatkbasetasker:prod
+    container_name: unicchat.tasker
     restart: unless-stopped
     depends_on:
-      mongodb:
+      unicchat.mongodb:
         condition: service_healthy
     ports:
       - 8881:8080
-      - 4443:443
-    env_file:
-      - solid.env
+    environment:
+      - api.vault.url=http://unicchat.vault:80/
+      - api.logger.url=http://unicchat.logger:8080/
     networks:
-      - unicchat-backend
-
-  unic.chat.appserver:
-    container_name: unic.chat.appserver
-    image: cr.yandex/crpvpl7g37r2id3i2qe5/unic_chat_appserver:prod.6-2.1.80-6
-    restart: on-failure
-    depends_on:
-      unic.chat.solid:
-        condition: service_started
-    env_file:
-      - appserver.env
-    volumes:
-      - chat_data:/app/uploads
-    ports:
-      - "8080:3000"
-    networks:
-      - unicchat-frontend
+      - unicchat-network
 
 networks:
-  unicchat-frontend:
-    driver: bridge
-    external: true
-  unicchat-backend:
-    driver: bridge
+  unicchat-network:
     external: true
 
 volumes:
   mongodb_data:
     driver: local
   chat_data:
+    driver: local
+  vault-data:
+    driver: local
+  nginx-logs:
     driver: local
