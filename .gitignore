@@ -1,1 +1,15 @@
 .internal*
+
+# Credentials and config files
+unicchat_creds.txt
+unicchat_config.txt
+domain.usr.txt
+
+# Generated env files (contain credentials)
+single-server-install/*.env
+single-server-install/*_cred.env
+single-server-install/*_creds.env
+
+# Logs
+*.log
+log.txt
