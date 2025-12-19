@@ -106,5 +106,4 @@ volumes:
     driver: local
   vault-data:
     driver: local
-  nginx-logs:
-    driver: local
+
