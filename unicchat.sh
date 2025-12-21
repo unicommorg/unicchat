@@ -794,7 +794,7 @@ auto_setup() {
   echo -e "\n⏳ Waiting for services to start..."
   sleep 10
   setup_vault_secrets
-  update_site_url
+#  update_site_url
   echo -e "\n🎉 UnicChat setup complete!"
   if [ "$DOMAIN" = "localhost" ]; then
     echo -e "🌐 Access your instance at: http://localhost:8080"
