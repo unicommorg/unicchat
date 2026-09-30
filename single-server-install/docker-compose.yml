@@ -218,6 +218,63 @@ services:
     networks:
       - unicchat-network
 
+  # 4b. Одноразовый инициализатор: выставляет Site_Url в настройках
+  #     приложения (бывший шаг update_site_url в unicchat.sh; в старом
+  #     скрипте шаг был закомментирован и, хуже того, писал в коллекцию
+  #     без префикса — то есть не работал. Здесь — в ${DB_COLLECTIONS_PREFIX}settings).
+  site-url-init:
+    image: ${IMAGE_MONGODB}
+    container_name: site-url-init
+    restart: "no"
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+      unicchat.appserver:
+        condition: service_started
+    command:
+      - /bin/bash
+      - -ec
+      - |
+          MONGO_URI="mongodb://root:$${MONGODB_ROOT_PASSWORD}@unicchat.mongodb:27017/admin?replicaSet=$${MONGODB_REPLICA_SET_NAME}&authSource=admin"
+          until mongosh "$${MONGO_URI}" \
+            --eval "db.hello().isWritablePrimary || db.hello().ismaster" --quiet | grep true >/dev/null 2>&1
+          do
+            sleep 5
+          done
+
+          # Ждём, пока appserver создаст коллекцию настроек при первом запуске
+          ATTEMPT=0
+          until mongosh "$${MONGO_URI}" --quiet --eval \
+            "db.getSiblingDB('$${MONGODB_DATABASE}').getCollectionNames().includes('$${DB_COLLECTIONS_PREFIX}settings')" \
+            | grep -q true; do
+            ATTEMPT=$$((ATTEMPT+1))
+            if [ "$${ATTEMPT}" -ge 30 ]; then
+              echo "Settings collection not created in time, writing anyway"
+              break
+            fi
+            sleep 5
+          done
+
+          mongosh "$${MONGO_URI}" --quiet --eval "
+            const d = db.getSiblingDB('$${MONGODB_DATABASE}');
+            const coll = d.getCollection('$${DB_COLLECTIONS_PREFIX}settings');
+            coll.updateOne(
+              { _id: 'Site_Url' },
+              { \$$set: { value: '$${ROOT_URL}', packageValue: '$${ROOT_URL}' } },
+              { upsert: true }
+            );
+            print('Site_Url = ' + (coll.findOne({_id:'Site_Url'}) || {}).value);
+          "
+          echo "Site_Url updated."
+    environment:
+      MONGODB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME}
+      MONGODB_DATABASE: ${MONGODB_DATABASE}
+      DB_COLLECTIONS_PREFIX: ${DB_COLLECTIONS_PREFIX}
+      ROOT_URL: ${ROOT_URL}
+    networks:
+      - unicchat-network
+
   # 5. Appserver
   unicchat.appserver:
     image: ${IMAGE_APPSERVER}

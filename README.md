@@ -82,7 +82,7 @@ vim .env   # или ваш редактор
 | Переменная | Назначение |
 |---|---|
 | `DOMAIN` | Домен сервера; `localhost` для локальной установки |
-| `ROOT_URL` | Публичный URL приложения: `https://ваш-домен` или `http://localhost:8080` |
+| `ROOT_URL` | **Публичный URL, как его видит браузер пользователя**: `https://ваш-домен` или `http://IP-сервера:8080`. Значение `localhost` годится, только если браузер на самом сервере — иначе HTML загрузится, но клиентский JS уйдёт на localhost и страница останется пустой |
 | `MONGODB_ROOT_PASSWORD` | Пароль root-пользователя MongoDB |
 | `MONGODB_USERNAME` / `MONGODB_PASSWORD` / `MONGODB_DATABASE` | Учётные данные приложения в MongoDB |
 | `LOGGER_DB_USER` / `LOGGER_DB_PASSWORD` / `LOGGER_DB_NAME` | Роль и база сервиса логирования в PostgreSQL |
@@ -114,7 +114,8 @@ Compose сам выполняет все шаги, которые раньше �
 4. поднимает Vault и ждёт его готовности (healthcheck);
 5. `vault-init` — одноразовый сервис, получающий токен Vault и создающий секрет `KBTConfigs`;
 6. поднимает PostgreSQL для logger'а, а `logger-postgres-init` создаёт в нём роль и базу (хранилище logger'а — PostgreSQL: с MongoDB сервис стартует, но падает на записи);
-7. запускает appserver, logger и tasker.
+7. `site-url-init` — одноразовый сервис, записывающий `ROOT_URL` в настройку `Site_Url` приложения (без этого клиентский JS обращается к адресу по умолчанию);
+8. запускает appserver, logger и tasker.
 
 Дождитесь завершения инициализации и проверьте статус:
 
@@ -124,7 +125,7 @@ docker compose logs mongo-users-init
 docker compose logs vault-init
 ```
 
-Единовременные сервисы (`mongo-users-init`, `vault-init`, `logger-postgres-init`) должны завершиться с кодом 0: их статус — `Exited (0)`.
+Единовременные сервисы (`mongo-users-init`, `vault-init`, `logger-postgres-init`, `site-url-init`) должны завершиться с кодом 0: их статус — `Exited (0)`.
 
 ### 2.5. Проверьте готовность
 
