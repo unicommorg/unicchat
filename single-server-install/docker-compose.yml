@@ -80,16 +80,12 @@ services:
             "
           }
 
-          create_user "$${LOGGER_DB_NAME}" "$${LOGGER_DB_USER}" "$${LOGGER_DB_PASSWORD}"
           create_user "$${VAULT_DB_NAME}" "$${VAULT_DB_USER}" "$${VAULT_DB_PASSWORD}"
           create_user "$${TASKER_DB_NAME}" "$${TASKER_DB_USER}" "$${TASKER_DB_PASSWORD}"
           echo "MongoDB users ready."
     environment:
       MONGODB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
       MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME}
-      LOGGER_DB_USER: ${LOGGER_DB_USER}
-      LOGGER_DB_PASSWORD: ${LOGGER_DB_PASSWORD}
-      LOGGER_DB_NAME: ${LOGGER_DB_NAME}
       VAULT_DB_USER: ${VAULT_DB_USER}
       VAULT_DB_PASSWORD: ${VAULT_DB_PASSWORD}
       VAULT_DB_NAME: ${VAULT_DB_NAME}
@@ -253,21 +249,83 @@ services:
       retries: 10
       start_period: 90s
 
-  # 6. Logger
+  # 6. PostgreSQL для logger.
+  #    Writer logger'а работает только с PostgreSQL: с MongoDB connection
+  #    string сервис стартует, но падает на записи («PostgreSQL connections
+  #    are not available»). Поэтому — отдельный Postgres, как в
+  #    unicchat.enterprise. LOGGER_DB_* в MongoDB больше не используются.
+  unicchat.logger.postgres:
+    image: ${IMAGE_POSTGRES}
+    container_name: unicchat.logger.postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${LOGGER_DB_PASSWORD}
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - logger_postgres_data:/var/lib/postgresql
+    networks:
+      - unicchat-network
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # Одноразовый инициализатор: роль и база logger'а в PostgreSQL
+  logger-postgres-init:
+    image: ${IMAGE_POSTGRES}
+    container_name: logger-postgres-init
+    restart: "no"
+    depends_on:
+      unicchat.logger.postgres:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+          echo "Waiting for logger postgres..."
+          until pg_isready -h unicchat.logger.postgres -U postgres >/dev/null 2>&1; do
+            sleep 2
+          done
+
+          echo "Ensuring logger role and database..."
+          psql -h unicchat.logger.postgres -U postgres -d postgres \
+            -c "CREATE ROLE $${LOGGER_DB_USER} LOGIN PASSWORD '$${LOGGER_DB_PASSWORD}';" \
+            || echo "logger role already exists"
+          psql -h unicchat.logger.postgres -U postgres -d postgres \
+            -c "CREATE DATABASE $${LOGGER_DB_NAME} OWNER $${LOGGER_DB_USER};" \
+            || echo "logger database already exists"
+          psql -h unicchat.logger.postgres -U postgres -d postgres \
+            -c "GRANT ALL PRIVILEGES ON DATABASE $${LOGGER_DB_NAME} TO $${LOGGER_DB_USER};"
+          echo "Logger postgres ready."
+    environment:
+      LOGGER_DB_USER: ${LOGGER_DB_USER}
+      LOGGER_DB_PASSWORD: ${LOGGER_DB_PASSWORD}
+      LOGGER_DB_NAME: ${LOGGER_DB_NAME}
+    networks:
+      - unicchat-network
+
+  # 7. Logger
   unicchat.logger:
     image: ${IMAGE_LOGGER}
     container_name: unicchat.logger
     restart: unless-stopped
     depends_on:
-      unicchat.mongodb:
+      unicchat.logger.postgres:
         condition: service_healthy
-      mongo-users-init:
+      logger-postgres-init:
         condition: service_completed_successfully
     environment:
       api.logger.url: ${API_LOGGER_URL}
-      # Образ ожидает Storage__ConnectionString; MongoCS из старой версии
-      # сервисом игнорируется (smoke-тест на 10.0.26.151, 2026-09-30)
-      Storage__ConnectionString: "mongodb://${LOGGER_DB_USER}:${LOGGER_DB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/${LOGGER_DB_NAME}?directConnection=true&authSource=${LOGGER_DB_NAME}&authMechanism=SCRAM-SHA-256"
+      # MongoCS из старой версии сервисом игнорируется (smoke-тест на
+      # 10.0.26.151, 2026-09-30) — нужен Storage__ConnectionString на Postgres
+      Storage__ConnectionString: "Host=unicchat.logger.postgres;Port=5432;Database=${LOGGER_DB_NAME};Username=${LOGGER_DB_USER};Password=${LOGGER_DB_PASSWORD}"
     ports:
       - "8082:8080"
     networks:
@@ -283,7 +341,7 @@ services:
       retries: 10
       start_period: 30s
 
-  # 7. Tasker
+  # 8. Tasker
   unicchat.tasker:
     image: ${IMAGE_TASKER}
     container_name: unicchat.tasker
@@ -312,4 +370,6 @@ volumes:
   chat_data:
     driver: local
   vault-data:
+    driver: local
+  logger_postgres_data:
     driver: local
