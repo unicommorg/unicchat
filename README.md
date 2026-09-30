@@ -92,10 +92,12 @@ vim .env   # или ваш редактор
 
 ### 2.3. Аутентифицируйтесь в Yandex Container Registry
 
-Используйте токен, полученный у владельца продукта:
+Образы лежат в Yandex Container Registry. Войдите в реестр (тот же токен, что в инструкции unicchat.enterprise):
 
 ```bash
-docker login --username oauth --password <токен> cr.yandex
+docker login --username oauth \
+  --password-stdin \
+  cr.yandex <<< "y0__wgBEPrL67wHGMHdEyD7rJmMGCeDEOXSuqJalbFdb2Dgucs0mlmU"
 ```
 
 ### 2.4. Запустите установку
