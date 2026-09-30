@@ -26,28 +26,13 @@ RAM 16 Gb;
 - Docker Engine ≥ 20.10 с плагином `docker compose`
 - git
 - Доступ с правами root или через sudo
-- Доменное имя, привязанное к IP-адресу вашего сервера (или используйте `localhost` для локальной установки)
+- Доменное имя, привязанное к IP-адресу вашего сервера
 
-> Скрипт `unicchat.sh` из предыдущих версий удалён. Установка выполняется
-> одним `docker compose up -d`: создание сети, пользователей MongoDB и
-> секрета Vault выполняют сервисы-инициализаторы внутри compose-файла.
 
-##### Установка Docker (Ubuntu)
+##### Установка Docker 
+Установка производится за пределами инструкции
 
-```bash
-sudo apt update
-sudo apt install -y ca-certificates curl gnupg
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-  sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release; echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin git
-```
+
 
 ##### Проверка AVX на процессоре
 
@@ -82,7 +67,7 @@ vim .env   # или ваш редактор
 | Переменная | Назначение |
 |---|---|
 | `DOMAIN` | Домен сервера; `localhost` для локальной установки |
-| `ROOT_URL` | **Публичный URL, как его видит браузер пользователя**: `https://ваш-домен` или `http://IP-сервера:8080`. Значение `localhost` годится, только если браузер на самом сервере — иначе HTML загрузится, но клиентский JS уйдёт на localhost и страница останется пустой |
+| `ROOT_URL` | **Публичный URL, как его видит браузер пользователя**: `https://ваш-домен` |
 | `MONGODB_ROOT_PASSWORD` | Пароль root-пользователя MongoDB |
 | `MONGODB_USERNAME` / `MONGODB_PASSWORD` / `MONGODB_DATABASE` | Учётные данные приложения в MongoDB |
 | `LOGGER_DB_USER` / `LOGGER_DB_PASSWORD` / `LOGGER_DB_NAME` | Роль и база сервиса логирования в PostgreSQL |
@@ -106,7 +91,7 @@ docker login --username oauth \
 docker compose up -d
 ```
 
-Compose сам выполняет все шаги, которые раньше делал скрипт установки:
+Compose сам выполняет все шаги:
 
 1. создаёт сеть `unicchat-network`;
 2. поднимает MongoDB и ждёт, пока она станет primary (healthcheck);
