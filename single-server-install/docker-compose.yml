@@ -112,6 +112,7 @@ services:
     command: server
     environment:
       MongoCS: "mongodb://${VAULT_DB_USER}:${VAULT_DB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/${VAULT_DB_NAME}?directConnection=true&authSource=${VAULT_DB_NAME}&replicaSet=${MONGODB_REPLICA_SET_NAME}&authMechanism=SCRAM-SHA-256"
+      Storage__ConnectionString: "mongodb://${VAULT_DB_USER}:${VAULT_DB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/${VAULT_DB_NAME}?directConnection=true&authSource=${VAULT_DB_NAME}&authMechanism=SCRAM-SHA-256"
       api.logger.url: ${API_LOGGER_URL}
     volumes:
       - vault-data:/vault/file/
@@ -150,8 +151,12 @@ services:
           ATTEMPT=1
           VAULT_TOKEN=""
           while [ "$${ATTEMPT}" -le "$${VAULT_INIT_RETRIES}" ]; do
-            VAULT_TOKEN="$$(curl -fsS "$${VAULT_URL}$${VAULT_TOKEN_PATH}?username=$${VAULT_TOKEN_USERNAME}" \
-              | sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')" || true
+            RESPONSE="$$(curl -fsS "$${VAULT_URL}$${VAULT_TOKEN_PATH}?username=$${VAULT_TOKEN_USERNAME}" || true)"
+            # Vault отвечает токеном либо plain text (JWT), либо JSON {"token":"..."}
+            VAULT_TOKEN="$$(printf '%s' "$${RESPONSE}" | sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+            if [ -z "$${VAULT_TOKEN}" ]; then
+              VAULT_TOKEN="$$(printf '%s' "$${RESPONSE}" | tr -d '\n\r\" ')"
+            fi
             if [ -n "$${VAULT_TOKEN}" ] && [ "$${VAULT_TOKEN}" != "null" ]; then
               break
             fi
@@ -260,7 +265,9 @@ services:
         condition: service_completed_successfully
     environment:
       api.logger.url: ${API_LOGGER_URL}
-      MongoCS: "mongodb://${LOGGER_DB_USER}:${LOGGER_DB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/${LOGGER_DB_NAME}?directConnection=true&authSource=${LOGGER_DB_NAME}&authMechanism=SCRAM-SHA-256"
+      # Образ ожидает Storage__ConnectionString; MongoCS из старой версии
+      # сервисом игнорируется (smoke-тест на 10.0.26.151, 2026-09-30)
+      Storage__ConnectionString: "mongodb://${LOGGER_DB_USER}:${LOGGER_DB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/${LOGGER_DB_NAME}?directConnection=true&authSource=${LOGGER_DB_NAME}&authMechanism=SCRAM-SHA-256"
     ports:
       - "8082:8080"
     networks:
