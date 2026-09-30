@@ -331,10 +331,11 @@ services:
     networks:
       - unicchat-network
     healthcheck:
+      # В образе нет curl/wget — TCP-проба через bash /dev/tcp
       test:
         [
           "CMD-SHELL",
-          "curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1 || wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1",
+          "bash -c 'echo >/dev/tcp/127.0.0.1/8080' || exit 1",
         ]
       interval: 10s
       timeout: 5s
