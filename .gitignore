@@ -1,17 +1,11 @@
 .internal*
 
-# Credentials and config files
+# Credentials and config files (legacy, со старого скрипта установки)
 unicchat_creds.txt
 unicchat_config.txt
 
-
-# Generated env files with credentials (DO NOT COMMIT)
-single-server-install/*_creds.env
-
-# Template env files (safe to commit - no credentials)
-# single-server-install/mongo.env
-# single-server-install/appserver.env
-# single-server-install/logger.env
+# Локальный .env с паролями (НЕ коммитить)
+single-server-install/.env
 
 # Logs
 *.log

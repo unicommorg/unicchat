@@ -1,0 +1,308 @@
+# Установка UnicChat на одном сервере: см. README.md в корне репозитория.
+#
+#   cp .env.example .env   # заполните пароли
+#   docker compose up -d
+#
+# Скрипт установки больше не нужен: создание пользователей MongoDB и
+# секрета Vault выполняют одноразовые сервисы-инициализаторы
+# (mongo-users-init, vault-init), запускаемые самим compose.
+
+services:
+  # 1. MongoDB — основа, все остальные сервисы ждут её готовности
+  unicchat.mongodb:
+    image: ${IMAGE_MONGODB}
+    container_name: unicchat.mongodb
+    restart: on-failure
+    environment:
+      MONGODB_REPLICA_SET_MODE: ${MONGODB_REPLICA_SET_MODE}
+      MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME}
+      MONGODB_REPLICA_SET_KEY: ${MONGODB_REPLICA_SET_KEY}
+      MONGODB_PORT_NUMBER: ${MONGODB_PORT_NUMBER}
+      MONGODB_ADVERTISED_HOSTNAME: ${MONGODB_ADVERTISED_HOSTNAME}
+      MONGODB_ENABLE_JOURNAL: ${MONGODB_ENABLE_JOURNAL}
+      MONGODB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGODB_USERNAME: ${MONGODB_USERNAME}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_DATABASE: ${MONGODB_DATABASE}
+    volumes:
+      - mongodb_data:/bitnami/mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - unicchat-network
+    healthcheck:
+      # Готов только когда replica set инициализирован и узел — primary
+      test: echo 'db.hello().isWritablePrimary || db.hello().ismaster' | mongosh localhost:27017/test --quiet | grep true || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 2. Одноразовый инициализатор: создаёт пользователей MongoDB
+  #    для logger и vault (то, что раньше делал пункт [8] unicchat.sh)
+  mongo-users-init:
+    image: ${IMAGE_MONGODB}
+    container_name: mongo-users-init
+    restart: "no"
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+    command:
+      - /bin/bash
+      - -ec
+      - |
+          MONGO_URI="mongodb://root:$${MONGODB_ROOT_PASSWORD}@unicchat.mongodb:27017/admin?replicaSet=$${MONGODB_REPLICA_SET_NAME}&authSource=admin"
+
+          until mongosh "$${MONGO_URI}" \
+            --eval "db.hello().isWritablePrimary || db.hello().ismaster" --quiet | grep true >/dev/null 2>&1
+          do
+            echo "Waiting for MongoDB primary..."
+            sleep 5
+          done
+
+          create_user() {
+            local db_name="$$1" user_name="$$2" password="$$3"
+            echo "Ensuring user $${user_name} in $${db_name}..."
+            mongosh "$${MONGO_URI}" --quiet --eval "
+              const dbx = db.getSiblingDB('$${db_name}');
+              const existing = dbx.getUser('$${user_name}');
+              if (!existing) {
+                dbx.createUser({
+                  user: '$${user_name}',
+                  pwd: '$${password}',
+                  roles: [{ role: 'readWrite', db: '$${db_name}' }]
+                });
+                print('CREATED');
+              } else {
+                dbx.changeUserPassword('$${user_name}', '$${password}');
+                print('PASSWORD_UPDATED');
+              }
+            "
+          }
+
+          create_user "$${LOGGER_DB_NAME}" "$${LOGGER_DB_USER}" "$${LOGGER_DB_PASSWORD}"
+          create_user "$${VAULT_DB_NAME}" "$${VAULT_DB_USER}" "$${VAULT_DB_PASSWORD}"
+          create_user "$${TASKER_DB_NAME}" "$${TASKER_DB_USER}" "$${TASKER_DB_PASSWORD}"
+          echo "MongoDB users ready."
+    environment:
+      MONGODB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME}
+      LOGGER_DB_USER: ${LOGGER_DB_USER}
+      LOGGER_DB_PASSWORD: ${LOGGER_DB_PASSWORD}
+      LOGGER_DB_NAME: ${LOGGER_DB_NAME}
+      VAULT_DB_USER: ${VAULT_DB_USER}
+      VAULT_DB_PASSWORD: ${VAULT_DB_PASSWORD}
+      VAULT_DB_NAME: ${VAULT_DB_NAME}
+      TASKER_DB_USER: ${TASKER_DB_USER}
+      TASKER_DB_PASSWORD: ${TASKER_DB_PASSWORD}
+      TASKER_DB_NAME: ${TASKER_DB_NAME}
+    networks:
+      - unicchat-network
+
+  # 3. Vault
+  unicchat.vault:
+    image: ${IMAGE_VAULT}
+    container_name: unicchat.vault
+    restart: always
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+      mongo-users-init:
+        condition: service_completed_successfully
+    command: server
+    environment:
+      MongoCS: "mongodb://${VAULT_DB_USER}:${VAULT_DB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/${VAULT_DB_NAME}?directConnection=true&authSource=${VAULT_DB_NAME}&replicaSet=${MONGODB_REPLICA_SET_NAME}&authMechanism=SCRAM-SHA-256"
+      api.logger.url: ${API_LOGGER_URL}
+    volumes:
+      - vault-data:/vault/file/
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:80"
+    networks:
+      - unicchat-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1/ >/dev/null 2>&1 || wget -q -O /dev/null http://127.0.0.1/ || bash -c 'echo >/dev/tcp/127.0.0.1/80'",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  # 4. Одноразовый инициализатор: создаёт секрет KBTConfigs в Vault
+  #    (то, что раньше делал пункт [9] unicchat.sh)
+  vault-init:
+    image: ${IMAGE_VAULT_INIT}
+    container_name: vault-init
+    restart: "no"
+    depends_on:
+      unicchat.vault:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+          echo "Waiting for Vault token..."
+          ATTEMPT=1
+          VAULT_TOKEN=""
+          while [ "$${ATTEMPT}" -le "$${VAULT_INIT_RETRIES}" ]; do
+            VAULT_TOKEN="$$(curl -fsS "$${VAULT_URL}$${VAULT_TOKEN_PATH}?username=$${VAULT_TOKEN_USERNAME}" \
+              | sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')" || true
+            if [ -n "$${VAULT_TOKEN}" ] && [ "$${VAULT_TOKEN}" != "null" ]; then
+              break
+            fi
+            VAULT_TOKEN=""
+            echo "  attempt $${ATTEMPT}/$${VAULT_INIT_RETRIES}"
+            ATTEMPT="$$(($${ATTEMPT} + 1))"
+            sleep "$${VAULT_INIT_RETRY_DELAY}"
+          done
+
+          if [ -z "$${VAULT_TOKEN}" ]; then
+            echo "Failed to obtain Vault token."
+            exit 1
+          fi
+          echo "Vault token received."
+
+          HTTP_CODE="$$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $${VAULT_TOKEN}" \
+            "$${VAULT_URL}api/Secrets/KBTConfigs/data" || true)"
+
+          if [ "$${HTTP_CODE}" = "200" ]; then
+            echo "KBTConfigs secret already exists, nothing to do."
+            exit 0
+          fi
+
+          echo "Creating KBTConfigs secret..."
+          HTTP_CODE="$$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$${VAULT_URL}api/Secrets" \
+            -H "Authorization: Bearer $${VAULT_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -H "accept: text/plain" \
+            -d "{
+              \"id\": \"KBTConfigs\",
+              \"name\": \"KBTConfigs\",
+              \"type\": \"Password\",
+              \"data\": \"All info in META\",
+              \"metadata\": {
+                \"MongoCS\": \"mongodb://$${TASKER_DB_USER}:$${TASKER_DB_PASSWORD}@$${KBT_MONGO_HOST}:27017/$${TASKER_DB_NAME}?directConnection=true&authSource=$${TASKER_DB_NAME}&authMechanism=SCRAM-SHA-256&replicaSet=$${MONGODB_REPLICA_SET_NAME}\",
+                \"MinioHost\": \"PLACEHOLDER_MINIO_HOST\",
+                \"MinioUser\": \"PLACEHOLDER_MINIO_USER\",
+                \"MinioPass\": \"PLACEHOLDER_MINIO_PASS\"
+              },
+              \"tags\": [\"KB\", \"Tasker\", \"Mongo\", \"Minio\"],
+              \"expiresAt\": \"2030-12-31T23:59:59.999Z\"
+            }" || true)"
+
+          if [ "$${HTTP_CODE}" -ge 200 ] && [ "$${HTTP_CODE}" -lt 300 ]; then
+            echo "KBTConfigs secret created."
+            exit 0
+          fi
+
+          echo "Failed to create KBTConfigs secret. HTTP $${HTTP_CODE}"
+          exit 1
+    environment:
+      VAULT_URL: ${API_VAULT_URL}
+      VAULT_TOKEN_PATH: api/token/0f8e160416b94225a73f86ac23b9118b
+      VAULT_TOKEN_USERNAME: KBTservice
+      TASKER_DB_USER: ${TASKER_DB_USER}
+      TASKER_DB_PASSWORD: ${TASKER_DB_PASSWORD}
+      TASKER_DB_NAME: ${TASKER_DB_NAME}
+      KBT_MONGO_HOST: ${KBT_MONGO_HOST}
+      MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME}
+      VAULT_INIT_RETRIES: 12
+      VAULT_INIT_RETRY_DELAY: 5
+    networks:
+      - unicchat-network
+
+  # 5. Appserver
+  unicchat.appserver:
+    image: ${IMAGE_APPSERVER}
+    container_name: unicchat.appserver
+    restart: on-failure
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+    environment:
+      MONGODB_HOST: ${MONGODB_HOST}
+      MONGODB_PORT: ${MONGODB_PORT_NUMBER}
+      DB_COLLECTIONS_PREFIX: ${DB_COLLECTIONS_PREFIX}
+      UNIC_SOLID_HOST: ${UNIC_SOLID_HOST}
+      PORT: ${PORT}
+      DEPLOY_METHOD: ${DEPLOY_METHOD}
+      MONGO_URL: mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/${MONGODB_DATABASE}?replicaSet=${MONGODB_REPLICA_SET_NAME}
+      MONGO_OPLOG_URL: mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/local
+      ROOT_URL: ${ROOT_URL}
+    volumes:
+      - chat_data:/app/uploads
+    ports:
+      - "8080:3000"
+    networks:
+      - unicchat-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => { let d=''; r.on('data', c => d+=c); r.on('end', () => process.exit(r.statusCode === 200 && d.includes('ok') ? 0 : 1)); }).on('error', () => process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  # 6. Logger
+  unicchat.logger:
+    image: ${IMAGE_LOGGER}
+    container_name: unicchat.logger
+    restart: unless-stopped
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+      mongo-users-init:
+        condition: service_completed_successfully
+    environment:
+      api.logger.url: ${API_LOGGER_URL}
+      MongoCS: "mongodb://${LOGGER_DB_USER}:${LOGGER_DB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT_NUMBER}/${LOGGER_DB_NAME}?directConnection=true&authSource=${LOGGER_DB_NAME}&authMechanism=SCRAM-SHA-256"
+    ports:
+      - "8082:8080"
+    networks:
+      - unicchat-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1 || wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # 7. Tasker
+  unicchat.tasker:
+    image: ${IMAGE_TASKER}
+    container_name: unicchat.tasker
+    restart: unless-stopped
+    depends_on:
+      unicchat.mongodb:
+        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
+    environment:
+      api.vault.url: ${API_VAULT_URL}
+      api.logger.url: ${API_LOGGER_URL}
+    ports:
+      - "8881:8080"
+    networks:
+      - unicchat-network
+
+networks:
+  # Сеть создаётся самим compose, отдельный шаг больше не нужен
+  unicchat-network:
+    name: unicchat-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  chat_data:
+    driver: local
+  vault-data:
+    driver: local
