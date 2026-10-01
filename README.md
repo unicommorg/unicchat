@@ -41,8 +41,6 @@
 | Logger | Журналирование событий (хранилище — PostgreSQL) |
 | Tasker | Сервис задач (база знаний задач) |
 
-Расширенные компоненты — MinIO, совместное редактирование документов (DocumentServer), бот Redmine — входят в редакцию [unicchat.enterprise](https://github.com/unicommorg/unicchat.enterprise).
-
 <!-- TOC --><a name="---1"></a>
 ## Архитектура установки
 
@@ -106,7 +104,7 @@ git clone https://github.com/unicommorg/unicchat.git
 <!-- TOC --><a name="--2-unicchat"></a>
 ## Шаг 2. Установка UnicChat
 
-Каталог `single-server-install/`, файл `docker-compose.yml`, один `.env`. Скрипт установки из предыдущих версий удалён: всё, что он делал руками, теперь выполняют сервисы самого compose — сеть, пользователи БД, секрет Vault, адрес сайта создаются автоматически.
+Каталог `single-server-install/`, файл `docker-compose.yml`, один `.env`. Установка выполняется одним `docker compose up`: сеть, пользователи БД, секрет Vault и адрес сайта создаются автоматически.
 
 <!-- TOC --><a name="21-"></a>
 ### 2.1 Права и доступы, которые нужно выдать
